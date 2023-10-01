@@ -1,0 +1,10 @@
+.idea/**
+.conda/**
+__pycache__/**
+build/**
+dist/**
+
+*.log
+*.exe
+*.zip
+
