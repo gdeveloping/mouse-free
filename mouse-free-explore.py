@@ -9,6 +9,8 @@ import string
 import sys
 import logging
 import threading
+from concurrent.futures import ThreadPoolExecutor
+import time
 
 
 TRANSPARENCY = 50  # 透明度
@@ -25,6 +27,11 @@ KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY = 'ctrl + alt + enter'
 KEYBOARD_QUIT_HOTKEY = 'ctrl + alt + q'
 TOGGLE_SHOW_HOTKEY = {"CTRL", "ALT"}
 LOG_FILE_PATH = 'mouse-free.log'
+THREAD_POOL_MAX_WORKERS = 5
+
+
+def get_timestamp_ms():
+    return time.time() * 1000
 
 
 def get_current_function_name():
@@ -73,6 +80,8 @@ class MyWindow(QWidget):
 
         super(MyWindow, self).__init__()
 
+        self.executor_pool = ThreadPoolExecutor(max_workers=THREAD_POOL_MAX_WORKERS)
+
         self.init_ui()
 
         self.keys = []
@@ -100,6 +109,7 @@ class MyWindow(QWidget):
         p.setColor(self.backgroundRole(), bg_color)
         self.setPalette(p)
         self.showFullScreen()
+        self.set_show_latest_time()
         self.my_delayed_hide()
 
         log_function_name_to_exit()
@@ -189,20 +199,39 @@ class MyWindow(QWidget):
         log_function_name_to_enter()
         self.log_window_status(self)
 
-        window.hide()
+        self.hide()
         
         log_function_name_to_exit()
     
 
+    def my_delayed_hide_task(self):
+        log_function_name_to_enter()
+
+        current = get_timestamp_ms()
+        if current - self.latest_show_timestamp >= DELAY_HIDE_TIME * 1000:
+            self.my_hide()
+        else:
+            logger.info("Cancel delayed hide task.")
+
+        log_function_name_to_exit()
+
+
     def my_delayed_hide(self):
-        threading.Timer(DELAY_HIDE_TIME, self.my_hide).start()
+        timer = threading.Timer(DELAY_HIDE_TIME, self.my_delayed_hide_task)
+        timer.start()
+        self.executor_pool.submit(timer)
+
+
+    def set_show_latest_time(self):
+        self.latest_show_timestamp = get_timestamp_ms()
 
 
     def my_show(self):
         log_function_name_to_enter()
         self.log_window_status(self)
 
-        window.showFullScreen()
+        self.showFullScreen()
+        self.set_show_latest_time()
         self.my_delayed_hide()
         
         log_function_name_to_exit()
@@ -226,8 +255,9 @@ class MyWindow(QWidget):
 
         x, y = mouse.Controller().position
         DETAIL_CELL_LENGTH = 300
-        window.setGeometry(x - DETAIL_CELL_LENGTH // 2, y - DETAIL_CELL_LENGTH // 2, DETAIL_CELL_LENGTH, DETAIL_CELL_LENGTH)
-        window.show()
+        self.setGeometry(x - DETAIL_CELL_LENGTH // 2, y - DETAIL_CELL_LENGTH // 2, DETAIL_CELL_LENGTH, DETAIL_CELL_LENGTH)
+        self.show()
+        self.set_show_latest_time()
         self.my_delayed_hide()
         
         log_function_name_to_exit()
