@@ -18,10 +18,11 @@ DELAY_HIDE_TIME = 5
 FONT_SIZE = 12  # 字体大小
 SHOW_INTERVAL = 5 * 1000  # 定时器间隔（毫秒 = 秒 * 1000）
 BACKGROUND_COLOR = (173, 216, 230)  # 背景：浅蓝色
-KEYBOARD_SHOW_HOTKEY = 'ctrl + alt'
-KEYBOARD_SHOW_DETAIL_HOTKEY = 'ctrl + shift + alt'
+KEYBOARD_SHOW_HOTKEY = 'ctrl + alt + space'
+KEYBOARD_SHOW_DETAIL_HOTKEY = 'ctrl + alt + shift'
 KEYBOARD_HIDE_HOTKEY = ''
-KEYBOARD_QUIT_HOTKEY = 'ctrl + q'
+KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY = 'ctrl + alt + enter'
+KEYBOARD_QUIT_HOTKEY = 'ctrl + alt + q'
 TOGGLE_SHOW_HOTKEY = {"CTRL", "ALT"}
 LOG_FILE_PATH = 'mouse-free.log'
 
@@ -82,7 +83,8 @@ class MyWindow(QWidget):
         self.keyboard_listener.quit_signal.connect(self.close)        
         self.keyboard_listener.show_signal.connect(self.my_show)
         self.keyboard_listener.show_detail_signal.connect(self.my_show_detail)
-        self.keyboard_listener.hide_signal.connect(self.my_hide)        
+        self.keyboard_listener.hide_signal.connect(self.my_hide) 
+        self.keyboard_listener.simulate_mouse_click_left_signal.connect(self.my_simulate_mouse_click_left)       
         self.keyboard_listener.start()
 
         log_function_name_to_exit()
@@ -205,6 +207,18 @@ class MyWindow(QWidget):
         
         log_function_name_to_exit()
 
+
+    def my_simulate_mouse_click_left(self):
+        log_function_name_to_enter()
+
+        if self.isVisible():
+            self.my_hide()
+            mouse.Controller().click(mouse.Button.left)
+        else:
+            logger.info("The left mouse click operation is invalid, cause window is not visible.")
+
+        log_function_name_to_exit()
+
     
     def my_show_detail(self):
         log_function_name_to_enter()
@@ -225,6 +239,7 @@ class KeyboardListener(QThread):
     hide_signal = pyqtSignal()
     quit_signal = pyqtSignal()
     key_pressed_signal = pyqtSignal(object)
+    simulate_mouse_click_left_signal = pyqtSignal()
     
 
     def __init__(self, logger):
@@ -235,6 +250,7 @@ class KeyboardListener(QThread):
         keyboard.add_hotkey(KEYBOARD_SHOW_HOTKEY, self.async_show_window)
         keyboard.add_hotkey(KEYBOARD_SHOW_DETAIL_HOTKEY, self.async_show_detail_window)
         keyboard.add_hotkey(KEYBOARD_QUIT_HOTKEY, self.async_quit)
+        keyboard.add_hotkey(KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY, self.async_simulate_mouse_click_left)
         
 
     
@@ -264,9 +280,17 @@ class KeyboardListener(QThread):
 
     def async_key_press(self, event):
         log_function_name_to_enter()
-        logger.info('enter async_key_press: {}'.format(event.name))
+        logger.debug('enter async_key_press: {}'.format(event.name))
 
         self.key_pressed_signal.emit(event)
+
+        log_function_name_to_exit()
+
+    
+    def async_simulate_mouse_click_left(self):
+        log_function_name_to_enter()
+
+        self.simulate_mouse_click_left_signal.emit()
 
         log_function_name_to_exit()
 
