@@ -22,7 +22,7 @@ SHOW_INTERVAL = 5 * 1000  # 定时器间隔（毫秒 = 秒 * 1000）
 BACKGROUND_COLOR = (173, 216, 230)  # 背景：浅蓝色
 KEYBOARD_SHOW_HOTKEY = 'ctrl + alt + space'
 KEYBOARD_SHOW_DETAIL_HOTKEY = 'ctrl + alt + shift'
-KEYBOARD_HIDE_HOTKEY = ''
+KEYBOARD_HIDE_HOTKEY = 'esc'
 KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY = 'ctrl + alt + enter'
 KEYBOARD_QUIT_HOTKEY = 'ctrl + alt + q'
 TOGGLE_SHOW_HOTKEY = {"CTRL", "ALT"}
@@ -279,6 +279,7 @@ class KeyboardListener(QThread):
         keyboard.on_press(self.async_key_press)
         keyboard.add_hotkey(KEYBOARD_SHOW_HOTKEY, self.async_show_window)
         keyboard.add_hotkey(KEYBOARD_SHOW_DETAIL_HOTKEY, self.async_show_detail_window)
+        keyboard.add_hotkey(KEYBOARD_HIDE_HOTKEY, self.async_hide_window)
         keyboard.add_hotkey(KEYBOARD_QUIT_HOTKEY, self.async_quit)
         keyboard.add_hotkey(KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY, self.async_simulate_mouse_click_left)
         
@@ -288,6 +289,14 @@ class KeyboardListener(QThread):
         log_function_name_to_enter()
 
         self.show_signal.emit()
+
+        log_function_name_to_exit()
+
+
+    def async_hide_window(self):
+        log_function_name_to_enter()
+
+        self.hide_signal.emit()
 
         log_function_name_to_exit()
 
