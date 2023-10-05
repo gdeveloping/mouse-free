@@ -89,7 +89,7 @@ class MyWindow(QWidget):
         # 监听键盘，独立线程
         self.keyboard_listener = KeyboardListener(logger)
         self.keyboard_listener.key_pressed_signal.connect(self.handle_keyboard)
-        self.keyboard_listener.quit_signal.connect(self.close)        
+        self.keyboard_listener.quit_signal.connect(self.quit_app)        
         self.keyboard_listener.show_signal.connect(self.my_show)
         self.keyboard_listener.show_detail_signal.connect(self.my_show_detail)
         self.keyboard_listener.hide_signal.connect(self.my_hide) 
@@ -109,6 +109,8 @@ class MyWindow(QWidget):
         p.setColor(self.backgroundRole(), bg_color)
         self.setPalette(p)
         self.showFullScreen()
+        # 隐藏窗口在任务栏的展示
+        self.setWindowFlags(Qt.Tool)
         self.set_show_latest_time()
         self.my_delayed_hide()
 
@@ -136,6 +138,14 @@ class MyWindow(QWidget):
         except Exception as e:
             logger.error('paintEvent Exception: {}'.format(e.with_traceback))
         
+        log_function_name_to_exit()
+
+
+    def quit_app(self):
+        log_function_name_to_enter()
+
+        QApplication.quit()
+
         log_function_name_to_exit()
 
     
