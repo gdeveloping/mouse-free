@@ -2,7 +2,6 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QDesktopWidget
 from PyQt5.QtGui import QPainter, QColor, QFont
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
-import sys
 from pynput import mouse
 import keyboard
 import string
@@ -12,7 +11,8 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 import time
 import traceback
-
+import pygetwindow as gw
+from pywinauto import Application
 
 # customizable configuration
 # hotkey
@@ -46,9 +46,9 @@ FONT_SIZE = 12  # level 1 font size
 IDENTIFIER_KEY_COUNT = 2
 
 # customizable configuration
-CELL_WIDTH_COLUMN_SIZE_LEVEL2 = 25 # level 2 cell width
-CELL_HEIGHT_ROW_SIZE_LEVEL2 = 15 # level 2 cell height
-FONT_SIZE_LEVEL2 = 9 # level 2 font size
+CELL_WIDTH_COLUMN_SIZE_LEVEL2 = 12 # level 2 cell width
+CELL_HEIGHT_ROW_SIZE_LEVEL2 = 12 # level 2 cell height
+FONT_SIZE_LEVEL2 = 8 # level 2 font size
 # fixed configuration
 IDENTIFIER_KEY_COUNT_LEVEL2 = 1
 CELL_COUNT_PER_WIDTH_PER_HEIGHT_LEVEL2 = 5
@@ -68,6 +68,7 @@ KEY_SCREEN_WIDTH_COLUMN_SIZE = "SCREEN_WIDTH_COLUMN_SIZE"
 KEY_SCREEN_HEIGHT_ROW_SIZE = "SCREEN_HEIGHT_ROW_SIZE"
 KEY_IDENTIFIER_KEY_COUNT = "IDENTIFIER_KEY_COUNT"
 
+APP_TITLE = 'Mouse-Free-Application'
 
 # logger
 logger = None
@@ -160,7 +161,7 @@ class MyWindow(QWidget):
         self.keyboard_listener.key_pressed_signal.connect(self.handle_keyboard)
         self.keyboard_listener.quit_signal.connect(self.quit_app)        
         self.keyboard_listener.show_signal.connect(self.my_show_full_window)
-        self.keyboard_listener.show_detail_signal.connect(self.my_show_detail)
+        self.keyboard_listener.show_detail_signal.connect(self.my_show_detail_window)
         self.keyboard_listener.hide_signal.connect(self.my_hide) 
         self.keyboard_listener.simulate_mouse_click_left_signal.connect(self.my_simulate_mouse_click_left)       
         self.keyboard_listener.start()
@@ -177,6 +178,8 @@ class MyWindow(QWidget):
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         # 隐藏窗口在任务栏的展示
         self.setWindowFlags(Qt.Tool)
+        self.window_tile = APP_TITLE
+        self.setWindowTitle(self.window_tile)
 
         p = self.palette()
         bg_color = QColor(*BACKGROUND_COLOR)
@@ -197,9 +200,6 @@ class MyWindow(QWidget):
             current_cell_width_column_size = self.get_current_cell_width_column_size()
             current_cell_height_row_size = self.get_current_cell_height_row_size()
 
-            current_screen_width_column_size = 0
-            current_screen_height_row_size = 0
-
             # always full screen
             self.setGeometry(0, 0, self.desktop.screenGeometry().width(), self.desktop.screenGeometry().height())
 
@@ -218,7 +218,7 @@ class MyWindow(QWidget):
             logger.debug('availableGeometry: {}, {}'.format(self.desktop.availableGeometry().width(), self.desktop.availableGeometry().height()))
             logger.debug('screenGeometry: {}, {}'.format(current_screen_width_column_size, current_screen_height_row_size))
 
-            logger.info('screen_level: {}; cell_width: {}; cell_height: {}; font_size: {}; window width: {}; window height: {}; x_start: {}; y_start: {}'.format(
+            logger.debug('screen_level: {}; cell_width: {}; cell_height: {}; font_size: {}; window width: {}; window height: {}; x_start: {}; y_start: {}'.format(
                 self.screen_level, 
                 current_cell_width_column_size,
                 current_cell_height_row_size,
@@ -241,7 +241,7 @@ class MyWindow(QWidget):
                                      current_cell_height_row_size // 2 + height_row_idx + self.y_start, 
                                      str(self.get_cell_identifier(width_column_idx, height_row_idx)))
                     identifier_count += 1
-            logger.info("identifier count: {}".format(identifier_count))
+            logger.debug("identifier count: {}".format(identifier_count))
             
             painter.end()
         except Exception as e:
@@ -291,8 +291,6 @@ class MyWindow(QWidget):
         logger.info('quit sys')
         self.hide()
         sys.exit(0)
-
-        # log_function_name_to_exit()
 
     
     def handle_keyboard(self, e):
@@ -389,7 +387,7 @@ class MyWindow(QWidget):
         if current - self.latest_show_timestamp >= DELAY_HIDE_TIME * 1000:
             self.my_hide()
         else:
-            logger.info("Cancel delayed hide task.")
+            logger.debug("Cancel delayed hide task.")
 
         log_function_name_to_exit()
 
@@ -413,26 +411,27 @@ class MyWindow(QWidget):
         self.my_delayed_hide()
 
 
+    def my_show_window_common(self):
+        self.hide()
+        self.showFullScreen()
+        self.handle_window_on_top()
+        self.post_show_window()
+
+
     def my_show_full_window(self):
         log_function_name_to_enter()
 
         self.screen_level = LEVEL_1
-
-        self.hide()
-        self.showFullScreen()
-        self.post_show_window()
+        self.my_show_window_common()
         
         log_function_name_to_exit()
 
     
-    def my_show_detail(self):
+    def my_show_detail_window(self):
         log_function_name_to_enter()
-        
-        self.screen_level = LEVEL_2
 
-        self.hide()
-        self.showFullScreen()
-        self.post_show_window()
+        self.screen_level = LEVEL_2
+        self.my_show_window_common()
         
         log_function_name_to_exit()
 
@@ -441,15 +440,41 @@ class MyWindow(QWidget):
         log_function_name_to_enter()
 
         if self.isVisible():
-            self.my_hide()
-            mouse.Controller().click(mouse.Button.left)
+            with mouse.Controller() as controller:
+                x_position, y_position = controller.position
+                logger.info("save mouse position")
+
+            self.hide()
+            QApplication.processEvents()
+
+            with mouse.Controller() as controller:
+                logger.info("is visible: {}".format(self.isVisible()))
+                controller.position = (x_position, y_position)
+                self.keys.clear()
+                controller.click(mouse.Button.left)
+                logger.info("left click")
+
+            self.my_show_detail_window()
+
+            with mouse.Controller() as controller:
+                controller.position = (x_position, y_position)
+                logger.info("restore mouse position")
         else:
             logger.info("The left mouse click operation is invalid, cause window is not visible.")
 
         log_function_name_to_exit()
 
 
-
+    def handle_window_on_top(self):
+        # set top
+        try:
+            window_item = gw.getWindowsWithTitle(self.window_tile)[0]
+            win_app = Application().connect(handle=window_item._hWnd)
+            win_app.top_window().set_focus()
+            logger.info('window app: {}'.format(window_item))
+        except Exception as e:
+            logger.error('handle_window_on_top Exception: {}'.format(e.with_traceback))
+            traceback.print_exc()
 
 class KeyboardListener(QThread):
     show_signal = pyqtSignal()
@@ -458,11 +483,18 @@ class KeyboardListener(QThread):
     quit_signal = pyqtSignal()
     key_pressed_signal = pyqtSignal(object)
     simulate_mouse_click_left_signal = pyqtSignal()
-    
 
     def __init__(self, logger):
         super(KeyboardListener, self).__init__()
         self.logger = logger
+
+        self.signal_hotkey_map = {
+            self.show_signal: KEYBOARD_SHOW_HOTKEY,
+            self.show_detail_signal: KEYBOARD_SHOW_DETAIL_HOTKEY,
+            self.hide_signal: KEYBOARD_HIDE_HOTKEY,
+            self.quit_signal: KEYBOARD_QUIT_HOTKEY,
+            self.simulate_mouse_click_left_signal: KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY
+        }
         
         keyboard.on_press(self.async_key_press)
         keyboard.add_hotkey(KEYBOARD_SHOW_HOTKEY, self.async_show_window)
@@ -475,6 +507,7 @@ class KeyboardListener(QThread):
     def async_show_window(self):
         log_function_name_to_enter()
 
+        keyboard.release(self.signal_hotkey_map[self.show_signal])
         self.show_signal.emit()
 
         log_function_name_to_exit()
@@ -483,6 +516,7 @@ class KeyboardListener(QThread):
     def async_hide_window(self):
         log_function_name_to_enter()
 
+        keyboard.release(self.signal_hotkey_map[self.hide_signal])
         self.hide_signal.emit()
 
         log_function_name_to_exit()
@@ -491,6 +525,7 @@ class KeyboardListener(QThread):
     def async_show_detail_window(self):
         log_function_name_to_enter()
 
+        keyboard.release(self.signal_hotkey_map[self.show_detail_signal])
         self.show_detail_signal.emit()
 
         log_function_name_to_exit()
@@ -499,6 +534,7 @@ class KeyboardListener(QThread):
     def async_quit(self):
         log_function_name_to_enter()
 
+        keyboard.release(self.signal_hotkey_map[self.quit_signal])
         self.quit_signal.emit()
 
         log_function_name_to_exit()
@@ -516,6 +552,7 @@ class KeyboardListener(QThread):
     def async_simulate_mouse_click_left(self):
         log_function_name_to_enter()
 
+        keyboard.release(self.signal_hotkey_map[self.simulate_mouse_click_left_signal])
         self.simulate_mouse_click_left_signal.emit()
 
         log_function_name_to_exit()
