@@ -416,6 +416,8 @@ class MyWindow(QWidget):
     def my_show_full_window(self):
         log_function_name_to_enter()
 
+        self.screen_level = LEVEL_1
+
         self.hide()
         self.showFullScreen()
         self.post_show_window()
