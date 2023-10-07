@@ -1,6 +1,6 @@
 
 from PyQt5.QtWidgets import QApplication, QWidget, QDesktopWidget
-from PyQt5.QtGui import QPainter, QColor, QFont
+from PyQt5.QtGui import QPainter, QColor, QFont, QCursor
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from pynput import mouse
 import keyboard
@@ -119,21 +119,12 @@ logger = config_logger(LOG_LEVEL, LOG_FILE_PATH)
 
 
 class MyWindow(QWidget):
-    def __init__(self):
+    def __init__(self, app: QApplication):
         log_function_name_to_enter()
 
         super(MyWindow, self).__init__()
 
-        self.desktop = QDesktopWidget()
-
-        self.executor_pool = ThreadPoolExecutor(max_workers=THREAD_POOL_MAX_WORKERS)
-
-        self.screen_level = LEVEL_DEFAULT
-
-        self.x_start = 0
-        self.y_start = 0
-
-        self.keys = []
+        self.app = app
 
         self.screen_size_config = {
             LEVEL_1: {
@@ -151,8 +142,22 @@ class MyWindow(QWidget):
                 KEY_IDENTIFIER_KEY_COUNT: IDENTIFIER_KEY_COUNT_LEVEL2
             }
         }
-
         logger.info('screen_size_config: {}'.format(self.screen_size_config))
+
+        self.executor_pool = ThreadPoolExecutor(max_workers=THREAD_POOL_MAX_WORKERS)
+
+        self.desktop = QDesktopWidget()
+
+        self.screen_level = LEVEL_DEFAULT        
+
+        self.x_start_of_current_screen = 0
+        self.y_start_of_current_screen = 0
+        self.x_start_in_current_screen = 0
+        self.y_start_in_current_screen = 0
+
+        self.keys = []
+
+        self.update_current_screen()
     
         self.init_ui()
 
@@ -167,6 +172,26 @@ class MyWindow(QWidget):
         self.keyboard_listener.start()
 
         log_function_name_to_exit()
+
+
+    def update_current_screen(self):
+        cursor = QCursor()
+        current_screen = self.app.screenAt(cursor.pos())
+
+        self.x_start_of_current_screen = current_screen.geometry().left()
+        self.y_start_of_current_screen = current_screen.geometry().top()
+        self.width_of_current_screen = current_screen.geometry().width()
+        self.height_of_current_screen = current_screen.geometry().height()
+
+        logger.info('cursor position: ({}, {}); current screen geometry: ({}, {}, {}, {})'.format(
+            cursor.pos().x(), cursor.pos().y(), 
+            self.x_start_of_current_screen, self.y_start_of_current_screen,
+            self.width_of_current_screen, self.height_of_current_screen))
+
+        screens = self.app.screens() 
+        screen_index = screens.index(current_screen)
+        is_primary_screen = current_screen == self.app.primaryScreen()
+        logger.info('screen count: {}; current screen index: {}; current screen is primary screen: {}'.format(len(screens), screen_index, is_primary_screen))
 
 
     def init_ui(self):
@@ -201,32 +226,32 @@ class MyWindow(QWidget):
             current_cell_height_row_size = self.get_current_cell_height_row_size()
 
             # always full screen
-            self.setGeometry(0, 0, self.desktop.screenGeometry().width(), self.desktop.screenGeometry().height())
+            self.setGeometry(self.x_start_of_current_screen, self.y_start_of_current_screen, 
+                             self.width_of_current_screen, self.height_of_current_screen)
 
             if self.screen_level == LEVEL_1:
                 current_screen_width_column_size = self.get_current_screen_width_column_size()
                 current_screen_height_row_size = self.get_current_screen_height_row_size()
-                self.x_start = 0
-                self.y_start = 0
+                self.x_start_in_current_screen = 0
+                self.y_start_in_current_screen = 0
             else:
                 x, y = mouse.Controller().position
                 current_screen_width_column_size = self.get_current_screen_size_config()[KEY_SCREEN_WIDTH_COLUMN_SIZE]
                 current_screen_height_row_size = self.get_current_screen_size_config()[KEY_SCREEN_HEIGHT_ROW_SIZE]
-                self.x_start = max(0, x - current_screen_width_column_size // 2)
-                self.y_start = max(0, y - current_screen_height_row_size // 2)
+                self.x_start_in_current_screen = max(0, x - current_screen_width_column_size // 2 - self.x_start_of_current_screen)
+                self.y_start_in_current_screen = max(0, y - current_screen_height_row_size // 2 - self.y_start_of_current_screen)
 
-            logger.debug('availableGeometry: {}, {}'.format(self.desktop.availableGeometry().width(), self.desktop.availableGeometry().height()))
             logger.debug('screenGeometry: {}, {}'.format(current_screen_width_column_size, current_screen_height_row_size))
 
-            logger.debug('screen_level: {}; cell_width: {}; cell_height: {}; font_size: {}; window width: {}; window height: {}; x_start: {}; y_start: {}'.format(
+            logger.debug('screen_level: {}; cell_width: {}; cell_height: {}; font_size: {}; x_start: {}; y_start: {}; window width: {}; window height: {}'.format(
                 self.screen_level, 
                 current_cell_width_column_size,
                 current_cell_height_row_size,
                 current_font_size,
+                self.x_start_in_current_screen,
+                self.y_start_in_current_screen,
                 self.width(),
-                self.height(),
-                self.x_start,
-                self.y_start
+                self.height()
             ))
 
             painter = QPainter()
@@ -237,8 +262,8 @@ class MyWindow(QWidget):
             identifier_count = 0            
             for width_column_idx in range(0, current_screen_width_column_size, current_cell_width_column_size):
                 for height_row_idx in range(0, current_screen_height_row_size, current_cell_height_row_size):
-                    painter.drawText(current_cell_width_column_size // 2 + width_column_idx + self.x_start, 
-                                     current_cell_height_row_size // 2 + height_row_idx + self.y_start, 
+                    painter.drawText(current_cell_width_column_size // 2 + width_column_idx + self.x_start_in_current_screen, 
+                                     current_cell_height_row_size // 2 + height_row_idx + self.y_start_in_current_screen, 
                                      str(self.get_cell_identifier(width_column_idx, height_row_idx)))
                     identifier_count += 1
             logger.debug("identifier count: {}".format(identifier_count))
@@ -309,28 +334,33 @@ class MyWindow(QWidget):
     
     def get_cell_identifier(self, column_width, row_height):
         if self.screen_level == LEVEL_1:
-            return string.ascii_uppercase[row_height // self.get_current_cell_height_row_size()] +\
-                string.ascii_uppercase[column_width // self.get_current_cell_width_column_size()]
+            return string.ascii_uppercase[row_height // self.get_current_cell_height_row_size() % len(string.ascii_uppercase)] +\
+                string.ascii_uppercase[column_width // self.get_current_cell_width_column_size() % len(string.ascii_uppercase)]
         elif self.screen_level == LEVEL_2:
-            idx = (row_height // self.get_current_cell_height_row_size()) * CELL_COUNT_PER_WIDTH_PER_HEIGHT_LEVEL2 + (column_width // self.get_current_cell_width_column_size())
+            idx = (row_height // self.get_current_cell_height_row_size()) * CELL_COUNT_PER_WIDTH_PER_HEIGHT_LEVEL2 + \
+                  (column_width // self.get_current_cell_width_column_size())
             return string.ascii_uppercase[idx % len(string.ascii_uppercase)]
     
 
     def get_target_mouse_position(self):
-        x_position = 0
-        y_position = 0
+        x_position_in_current_screen = 0
+        y_position_in_current_screen = 0
         current_cell_height_row_size = self.get_current_cell_height_row_size()
         current_cell_width_column_size = self.get_current_cell_width_column_size()
         if self.screen_level == LEVEL_1:
             height_row_key = str(self.keys[0]).upper()
             width_column_key = str(self.keys[1]).upper()        
-            x_position = string.ascii_uppercase.index(width_column_key) * current_cell_width_column_size + current_cell_width_column_size // 2 + self.x_start
-            y_position = string.ascii_uppercase.index(height_row_key) * current_cell_height_row_size + current_cell_height_row_size // 2 + self.y_start
+            x_position_in_current_screen = string.ascii_uppercase.index(width_column_key) * current_cell_width_column_size + \
+                current_cell_width_column_size // 2 + self.x_start_in_current_screen
+            y_position_in_current_screen = string.ascii_uppercase.index(height_row_key) * current_cell_height_row_size + \
+                current_cell_height_row_size // 2 + self.y_start_in_current_screen
         elif self.screen_level == LEVEL_2:
             key_idx = string.ascii_uppercase.index(str(self.keys[0]).upper())
-            x_position = (key_idx % CELL_COUNT_PER_WIDTH_PER_HEIGHT_LEVEL2) * current_cell_width_column_size + current_cell_width_column_size // 2 + self.x_start
-            y_position = (key_idx // CELL_COUNT_PER_WIDTH_PER_HEIGHT_LEVEL2) * current_cell_height_row_size + current_cell_height_row_size // 2 + self.y_start
-        return x_position, y_position
+            x_position_in_current_screen = (key_idx % CELL_COUNT_PER_WIDTH_PER_HEIGHT_LEVEL2) * current_cell_width_column_size + \
+                current_cell_width_column_size // 2 + self.x_start_in_current_screen
+            y_position_in_current_screen = (key_idx // CELL_COUNT_PER_WIDTH_PER_HEIGHT_LEVEL2) * current_cell_height_row_size + \
+                current_cell_height_row_size // 2 + self.y_start_in_current_screen
+        return x_position_in_current_screen + self.x_start_of_current_screen, y_position_in_current_screen + self.y_start_of_current_screen
 
 
     def is_match_hotkey(self, expect_key, actual_key):
@@ -413,6 +443,7 @@ class MyWindow(QWidget):
 
     def my_show_window_common(self):
         self.hide()
+        self.update_current_screen()
         self.showFullScreen()
         self.handle_window_on_top()
         self.post_show_window()
@@ -475,6 +506,8 @@ class MyWindow(QWidget):
         except Exception as e:
             logger.error('handle_window_on_top Exception: {}'.format(e.with_traceback))
             traceback.print_exc()
+
+
 
 class KeyboardListener(QThread):
     show_signal = pyqtSignal()
@@ -570,7 +603,7 @@ class KeyboardListener(QThread):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
 
-    window = MyWindow()
+    window = MyWindow(app)
 
     sys.exit(app.exec_())
 
