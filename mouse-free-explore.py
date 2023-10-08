@@ -18,6 +18,7 @@ from pywinauto import Application
 # hotkey
 KEYBOARD_SHOW_HOTKEY = 'ctrl + alt + space'
 KEYBOARD_SHOW_DETAIL_HOTKEY = 'ctrl + alt + shift'
+KEYBOARD_SHOW_IN_SWITCHED_SCREEN_HOTKEY = 'ctrl + alt + 0'
 KEYBOARD_HIDE_HOTKEY = 'esc'
 KEYBOARD_QUIT_HOTKEY = 'ctrl + alt + q'
 KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY = 'ctrl + alt + enter'
@@ -172,6 +173,7 @@ class MyWindow(QWidget):
         self.keyboard_listener.quit_signal.connect(self.quit_app)        
         self.keyboard_listener.show_signal.connect(self.my_show_full_window)
         self.keyboard_listener.show_detail_signal.connect(self.my_show_detail_window)
+        self.keyboard_listener.show_in_switched_screen_signal.connect(self.my_show_window_in_switched_screen)
         self.keyboard_listener.hide_signal.connect(self.my_hide) 
         self.keyboard_listener.simulate_mouse_click_left_signal.connect(self.my_simulate_mouse_click_left)       
         self.keyboard_listener.simulate_mouse_click_left_double_signal.connect(self.my_simulate_mouse_click_left_double)
@@ -483,6 +485,35 @@ class MyWindow(QWidget):
         log_function_name_to_exit()
 
 
+    def switch_screen(self):
+        log_function_name_to_enter()
+
+        cursor = QCursor()
+        cursor_screen = self.app.screenAt(cursor.pos())
+        screens = self.app.screens() 
+        x_position = 0
+        y_position = 0
+        for screen in screens:
+            if screen != cursor_screen:
+                x_position = screen.geometry().left() + screen.geometry().width() // 2
+                y_position = screen.geometry().top() + screen.geometry().height() // 2
+                mouse.Controller().position = (x_position, y_position)
+                break
+        logger.info("switch screen and cursor now in ({}, {})".format(x_position, y_position))
+
+        log_function_name_to_exit()
+        
+
+    def my_show_window_in_switched_screen(self):
+        log_function_name_to_enter()
+
+        self.screen_level = LEVEL_1
+        self.switch_screen()
+        self.my_show_window_common()
+        
+        log_function_name_to_exit()
+
+
     def my_simulate_mouse_click_left(self):
         log_function_name_to_enter()
         logger.info('left single click')
@@ -552,6 +583,7 @@ class MyWindow(QWidget):
 class KeyboardListener(QThread):
     show_signal = pyqtSignal()
     show_detail_signal = pyqtSignal()
+    show_in_switched_screen_signal = pyqtSignal();
     hide_signal = pyqtSignal()
     quit_signal = pyqtSignal()
     key_pressed_signal = pyqtSignal(object)
@@ -566,16 +598,18 @@ class KeyboardListener(QThread):
         self.signal_hotkey_map = {
             self.show_signal: KEYBOARD_SHOW_HOTKEY,
             self.show_detail_signal: KEYBOARD_SHOW_DETAIL_HOTKEY,
+            self.show_in_switched_screen_signal: KEYBOARD_SHOW_IN_SWITCHED_SCREEN_HOTKEY,
             self.hide_signal: KEYBOARD_HIDE_HOTKEY,
             self.quit_signal: KEYBOARD_QUIT_HOTKEY,
             self.simulate_mouse_click_left_signal: KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY,
             self.simulate_mouse_click_left_double_signal: KEYBOARD_MOUSE_CLICK_LEFT_DOUBLE_HOTKEY,
-            self.simulate_mouse_click_right_signal: KEYBOARD_MOUSE_CLICK_RIGHT_HOTKEY
+            self.simulate_mouse_click_right_signal: KEYBOARD_MOUSE_CLICK_RIGHT_HOTKEY            
         }
         
         keyboard.on_press(self.async_key_press)
         keyboard.add_hotkey(KEYBOARD_SHOW_HOTKEY, self.async_show_window)
         keyboard.add_hotkey(KEYBOARD_SHOW_DETAIL_HOTKEY, self.async_show_detail_window)
+        keyboard.add_hotkey(KEYBOARD_SHOW_IN_SWITCHED_SCREEN_HOTKEY, self.async_show_window_in_switched_screen)
         keyboard.add_hotkey(KEYBOARD_HIDE_HOTKEY, self.async_hide_window)
         keyboard.add_hotkey(KEYBOARD_QUIT_HOTKEY, self.async_quit)
         keyboard.add_hotkey(KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY, self.async_simulate_mouse_click_left)
@@ -606,6 +640,15 @@ class KeyboardListener(QThread):
 
         keyboard.release(self.signal_hotkey_map[self.show_detail_signal])
         self.show_detail_signal.emit()
+
+        log_function_name_to_exit()
+    
+    
+    def async_show_window_in_switched_screen(self):
+        log_function_name_to_enter()
+
+        keyboard.release(self.signal_hotkey_map[self.show_in_switched_screen_signal])
+        self.show_in_switched_screen_signal.emit()
 
         log_function_name_to_exit()
 
