@@ -160,6 +160,8 @@ class MyWindow(QWidget):
 
         self.keys = []
 
+        self.record_current_mouse_position()
+
         self.update_current_screen()
     
         self.init_ui()
@@ -274,6 +276,8 @@ class MyWindow(QWidget):
             logger.debug("identifier count: {}".format(identifier_count))
             
             painter.end()
+
+            mouse.Controller().position = (self.x_old, self.y_old)
         except Exception as e:
             logger.error('paintEvent Exception: {}'.format(e.with_traceback))
             traceback.print_exc()
@@ -398,6 +402,8 @@ class MyWindow(QWidget):
             logger.info('pressed keys: {}'.format(self.keys))
             logger.info('move mouse to ({}, {})'.format(x_position, y_position))   
         
+        self.record_current_mouse_position()
+
         # after mouse position changed
         self.keys.clear()
         self.my_hide()
@@ -446,7 +452,12 @@ class MyWindow(QWidget):
         self.my_delayed_hide()
 
 
+    def record_current_mouse_position(self):
+        self.x_old, self.y_old = mouse.Controller().position
+
+
     def my_show_window_common(self):
+        self.record_current_mouse_position()
         self.hide()
         self.update_current_screen()
         self.showFullScreen()
