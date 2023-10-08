@@ -21,8 +21,8 @@ KEYBOARD_SHOW_DETAIL_HOTKEY = 'ctrl + alt + shift'
 KEYBOARD_HIDE_HOTKEY = 'esc'
 KEYBOARD_QUIT_HOTKEY = 'ctrl + alt + q'
 KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY = 'ctrl + alt + enter'
-KEYBOARD_MOUSE_CLICK_LEFT_DOUBLE_HOTKEY = 'ctrl+alt+plus'
-KEYBOARD_MOUSE_CLICK_RIGHT_HOTKEY = 'ctrl+alt+0'
+KEYBOARD_MOUSE_CLICK_LEFT_DOUBLE_HOTKEY = 'ctrl + alt + plus'
+KEYBOARD_MOUSE_CLICK_RIGHT_HOTKEY = 'ctrl + alt + -'
 
 
 # log file path
@@ -508,10 +508,13 @@ class MyWindow(QWidget):
                 logger.info("is visible: {}".format(self.isVisible()))
                 controller.position = (x_position, y_position)
                 self.keys.clear()
-                controller.click(button, click_times)
-                logger.info("click")
+                controller.click(button)
+                for _ in range(1, click_times):
+                    time.sleep(0.2)
+                    controller.click(button)
 
-            self.my_show_detail_window()
+            if mouse.Button.right != button:
+                self.my_show_detail_window()
 
             with mouse.Controller() as controller:
                 controller.position = (x_position, y_position)
