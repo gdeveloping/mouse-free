@@ -13,6 +13,8 @@ import time
 import traceback
 import pygetwindow as gw
 from pywinauto import Application
+import psutil
+import os
 
 # customizable configuration
 # hotkey
@@ -20,7 +22,7 @@ KEYBOARD_SHOW_HOTKEY = 'ctrl + alt + space'
 KEYBOARD_SHOW_DETAIL_HOTKEY = 'ctrl + alt + shift'
 KEYBOARD_SHOW_IN_SWITCHED_SCREEN_HOTKEY = 'ctrl + alt + 0'
 KEYBOARD_HIDE_HOTKEY = 'esc'
-KEYBOARD_QUIT_HOTKEY = 'ctrl + alt + q'
+KEYBOARD_QUIT_HOTKEY = 'ctrl + alt + q' 
 KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY = 'ctrl + alt + enter'
 KEYBOARD_MOUSE_CLICK_LEFT_DOUBLE_HOTKEY = 'ctrl + alt + plus'
 KEYBOARD_MOUSE_CLICK_RIGHT_HOTKEY = 'ctrl + alt + -'
@@ -460,6 +462,7 @@ class MyWindow(QWidget):
 
     def my_show_window_common(self):
         self.record_current_mouse_position()
+        self.show_top_application()
         self.hide()
         self.update_current_screen()
         self.showFullScreen()
@@ -568,6 +571,7 @@ class MyWindow(QWidget):
 
 
     def handle_window_on_top(self):
+        log_function_name_to_enter()
         # set top
         try:
             window_item = gw.getWindowsWithTitle(self.window_tile)[0]
@@ -577,6 +581,25 @@ class MyWindow(QWidget):
         except Exception as e:
             logger.error('handle_window_on_top Exception: {}'.format(e.with_traceback))
             traceback.print_exc()
+
+        log_function_name_to_exit()
+
+
+    def show_top_application(self):
+        log_function_name_to_enter()
+
+        active_window = gw.getActiveWindow()
+        top_app = Application().connect(handle=active_window._hWnd)
+        pid = top_app.process
+        p = psutil.Process(pid)
+        exe_path = p.exe()
+        exe_name = exe_path.split(os.path.sep)[-1].removesuffix('.exe').removesuffix('64')
+        if "idea" == exe_name:
+            logger.info('The top-level software is IntelliJ IDEA.')
+        else:
+            logger.info('The top-level software is {}'.format(exe_name))
+
+        log_function_name_to_exit()
 
 
 
