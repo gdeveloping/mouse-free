@@ -1,12 +1,10 @@
 
 from PyQt5.QtWidgets import QApplication, QWidget, QDesktopWidget
 from PyQt5.QtGui import QPainter, QColor, QFont, QCursor
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PyQt5.QtCore import Qt
 from pynput import mouse
-import keyboard
 import string
 import sys
-import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor
 import time
@@ -15,113 +13,11 @@ import pygetwindow as gw
 from pywinauto import Application
 import psutil
 import os
+from utils import *
+from properties import *
+from log_utils import *
+from KeyboardListener import KeyboardListener
 
-# customizable configuration
-# hotkey
-KEYBOARD_SHOW_HOTKEY = 'ctrl + alt + space'
-KEYBOARD_SHOW_DETAIL_HOTKEY = 'ctrl + alt + shift'
-KEYBOARD_SHOW_IN_SWITCHED_SCREEN_HOTKEY = 'ctrl + alt + 0'
-KEYBOARD_HIDE_HOTKEY = 'esc'
-KEYBOARD_QUIT_HOTKEY = 'ctrl + alt + q' 
-KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY = 'ctrl + alt + enter'
-KEYBOARD_MOUSE_CLICK_LEFT_DOUBLE_HOTKEY = 'ctrl + alt + plus'
-KEYBOARD_MOUSE_CLICK_RIGHT_HOTKEY = 'ctrl + alt + -'
-
-
-# log file path
-LOG_FILE_PATH = 'mouse-free.log'
-# log level
-LOG_LEVEL = logging.INFO
-
-# screen
-# fixed configuration
-MAX_CELL_LEVEL = 2 # max level， start from 1
-
-# customizable configuration
-TRANSPARENCY = 50  # N / 100
-DELAY_HIDE_TIME = 5 # second
-BACKGROUND_COLOR = (173, 216, 230) 
-IDENTIFIER_FONT_COLOR = (0, 0, 0)
-THREAD_POOL_MAX_WORKERS = 5 
-
-# customizable configuration
-CELL_WIDTH_COLUMN_SIZE = 75  # level 1 cell width
-CELL_HEIGHT_ROW_SIZE = 45  # level 1 cell height
-FONT_SIZE = 12  # level 1 font size
-# fixed configuration
-IDENTIFIER_KEY_COUNT = 2
-
-# customizable configuration
-CELL_WIDTH_COLUMN_SIZE_LEVEL2 = 12 # level 2 cell width
-CELL_HEIGHT_ROW_SIZE_LEVEL2 = 12 # level 2 cell height
-FONT_SIZE_LEVEL2 = 8 # level 2 font size
-# fixed configuration
-IDENTIFIER_KEY_COUNT_LEVEL2 = 1
-CELL_COUNT_PER_WIDTH_PER_HEIGHT_LEVEL2 = 5
-SCREEN_WIDTH_COLUMN_SIZE_LEVEL2 = CELL_WIDTH_COLUMN_SIZE_LEVEL2 * CELL_COUNT_PER_WIDTH_PER_HEIGHT_LEVEL2
-SCREEN_HEIGHT_ROW_SIZE_LEVEL2 = CELL_HEIGHT_ROW_SIZE_LEVEL2 * CELL_COUNT_PER_WIDTH_PER_HEIGHT_LEVEL2
-
-
-# constant
-LEVEL_1 = "LEVEL_1"
-LEVEL_2 = "LEVEL_2"
-LEVEL_DEFAULT = LEVEL_1
-
-KEY_CELL_WIDTH_COLUMN_SIZE = "CELL_WIDTH_COLUMN_SIZE"
-KEY_CELL_HEIGHT_ROW_SIZE = "CELL_HEIGHT_ROW_SIZE"
-KEY_FONT_SIZE = "FONT_SIZE"
-KEY_SCREEN_WIDTH_COLUMN_SIZE = "SCREEN_WIDTH_COLUMN_SIZE"
-KEY_SCREEN_HEIGHT_ROW_SIZE = "SCREEN_HEIGHT_ROW_SIZE"
-KEY_IDENTIFIER_KEY_COUNT = "IDENTIFIER_KEY_COUNT"
-
-APP_TITLE = 'Mouse-Free-Application'
-
-# logger
-logger = None
-
-
-def get_timestamp_ms():
-    return time.time() * 1000
-
-
-def get_current_function_name():
-    return sys._getframe(1).f_code.co_name
-
-
-def log_function_name_to_enter():
-    logger.debug('enter function: {}'.format(sys._getframe(1).f_code.co_name))
-
-
-def log_function_name_to_exit():
-    logger.debug('exit function: {}'.format(sys._getframe(1).f_code.co_name))
-
-
-def is_valid_single_alpha(key):
-    return len(str(key)) == 1 and str(key).isalpha()
-
-def config_logger(log_level, log_file_path):
-    logger = logging.getLogger()
-
-    logger.setLevel(log_level)
-
-    # Create a console handler and a file handler
-    console_handler = logging.StreamHandler()
-    file_handler = logging.FileHandler(log_file_path)
-
-    # Create a formatter and attach it to the handlers
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    console_handler.setFormatter(formatter)
-    file_handler.setFormatter(formatter)
-
-    # Attach the handlers to the logger
-    logger.addHandler(console_handler)
-    logger.addHandler(file_handler)
-
-    return logger
-
-
-# Create a logger
-logger = config_logger(LOG_LEVEL, LOG_FILE_PATH)
 
 
 class MyWindow(QWidget):
@@ -589,6 +485,10 @@ class MyWindow(QWidget):
         log_function_name_to_enter()
 
         active_window = gw.getActiveWindow()
+        if active_window == None:
+            logger.info('no activate window')
+            log_function_name_to_exit()
+            return
         top_app = Application().connect(handle=active_window._hWnd)
         pid = top_app.process
         p = psutil.Process(pid)
@@ -600,141 +500,4 @@ class MyWindow(QWidget):
             logger.info('The top-level software is {}'.format(exe_name))
 
         log_function_name_to_exit()
-
-
-
-class KeyboardListener(QThread):
-    show_signal = pyqtSignal()
-    show_detail_signal = pyqtSignal()
-    show_in_switched_screen_signal = pyqtSignal();
-    hide_signal = pyqtSignal()
-    quit_signal = pyqtSignal()
-    key_pressed_signal = pyqtSignal(object)
-    simulate_mouse_click_left_signal = pyqtSignal()
-    simulate_mouse_click_left_double_signal = pyqtSignal()
-    simulate_mouse_click_right_signal = pyqtSignal()
-
-    def __init__(self, logger):
-        super(KeyboardListener, self).__init__()
-        self.logger = logger
-
-        self.signal_hotkey_map = {
-            self.show_signal: KEYBOARD_SHOW_HOTKEY,
-            self.show_detail_signal: KEYBOARD_SHOW_DETAIL_HOTKEY,
-            self.show_in_switched_screen_signal: KEYBOARD_SHOW_IN_SWITCHED_SCREEN_HOTKEY,
-            self.hide_signal: KEYBOARD_HIDE_HOTKEY,
-            self.quit_signal: KEYBOARD_QUIT_HOTKEY,
-            self.simulate_mouse_click_left_signal: KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY,
-            self.simulate_mouse_click_left_double_signal: KEYBOARD_MOUSE_CLICK_LEFT_DOUBLE_HOTKEY,
-            self.simulate_mouse_click_right_signal: KEYBOARD_MOUSE_CLICK_RIGHT_HOTKEY            
-        }
-        
-        keyboard.on_press(self.async_key_press)
-        keyboard.add_hotkey(KEYBOARD_SHOW_HOTKEY, self.async_show_window)
-        keyboard.add_hotkey(KEYBOARD_SHOW_DETAIL_HOTKEY, self.async_show_detail_window)
-        keyboard.add_hotkey(KEYBOARD_SHOW_IN_SWITCHED_SCREEN_HOTKEY, self.async_show_window_in_switched_screen)
-        keyboard.add_hotkey(KEYBOARD_HIDE_HOTKEY, self.async_hide_window)
-        keyboard.add_hotkey(KEYBOARD_QUIT_HOTKEY, self.async_quit)
-        keyboard.add_hotkey(KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY, self.async_simulate_mouse_click_left)
-        keyboard.add_hotkey(KEYBOARD_MOUSE_CLICK_LEFT_DOUBLE_HOTKEY, self.async_simulate_mouse_click_left_double)
-        keyboard.add_hotkey(KEYBOARD_MOUSE_CLICK_RIGHT_HOTKEY, self.async_simulate_mouse_click_right)
-     
-
-    def async_show_window(self):
-        log_function_name_to_enter()
-
-        keyboard.release(self.signal_hotkey_map[self.show_signal])
-        self.show_signal.emit()
-
-        log_function_name_to_exit()
-
-
-    def async_hide_window(self):
-        log_function_name_to_enter()
-
-        keyboard.release(self.signal_hotkey_map[self.hide_signal])
-        self.hide_signal.emit()
-
-        log_function_name_to_exit()
-
-
-    def async_show_detail_window(self):
-        log_function_name_to_enter()
-
-        keyboard.release(self.signal_hotkey_map[self.show_detail_signal])
-        self.show_detail_signal.emit()
-
-        log_function_name_to_exit()
-    
-    
-    def async_show_window_in_switched_screen(self):
-        log_function_name_to_enter()
-
-        keyboard.release(self.signal_hotkey_map[self.show_in_switched_screen_signal])
-        self.show_in_switched_screen_signal.emit()
-
-        log_function_name_to_exit()
-
-    
-    def async_quit(self):
-        log_function_name_to_enter()
-
-        keyboard.release(self.signal_hotkey_map[self.quit_signal])
-        self.quit_signal.emit()
-
-        log_function_name_to_exit()
-
-
-    def async_key_press(self, event):
-        log_function_name_to_enter()
-        logger.debug('enter async_key_press: {}'.format(event.name))
-
-        self.key_pressed_signal.emit(event)
-
-        log_function_name_to_exit()
-
-    
-    def async_simulate_mouse_click_left(self):
-        log_function_name_to_enter()
-
-        keyboard.release(self.signal_hotkey_map[self.simulate_mouse_click_left_signal])
-        self.simulate_mouse_click_left_signal.emit()
-
-        log_function_name_to_exit()
-
-
-    def async_simulate_mouse_click_left_double(self):
-        log_function_name_to_enter()
-
-        keyboard.release(self.signal_hotkey_map[self.simulate_mouse_click_left_double_signal])
-        self.simulate_mouse_click_left_double_signal.emit()
-
-        log_function_name_to_exit()
-
-    
-    def async_simulate_mouse_click_right(self):
-        log_function_name_to_enter()
-
-        keyboard.release(self.signal_hotkey_map[self.simulate_mouse_click_right_signal])
-        self.simulate_mouse_click_right_signal.emit()
-
-        log_function_name_to_exit()
-
-
-
-    def run(self):
-        log_function_name_to_enter()
-        
-        logger.info('Thread is running...')
-
-        log_function_name_to_exit()         
-
-
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-
-    window = MyWindow(app)
-
-    sys.exit(app.exec_())
 
