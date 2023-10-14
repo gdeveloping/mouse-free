@@ -1,10 +1,12 @@
 
 from utils import *
 
+APP_TITLE = 'Mouse-Free-Application'
 
 CONFIG_FILE_NAME = 'mouse-free.config'
 
 properties = get_config_from_properties_file(CONFIG_FILE_NAME)
+
 
 # hotkey
 KEYBOARD_SHOW_HOTKEY = properties['KEYBOARD_SHOW_HOTKEY']
@@ -23,7 +25,6 @@ LOG_LEVEL = str_to_log_level(str(properties['LOG_LEVEL']).strip().upper())
 
 
 # screen
-# fixed configuration
 MAX_CELL_LEVEL = 2 # max level， start from 1
 
 # customizable configuration
@@ -62,5 +63,3 @@ KEY_FONT_SIZE = "FONT_SIZE"
 KEY_SCREEN_WIDTH_COLUMN_SIZE = "SCREEN_WIDTH_COLUMN_SIZE"
 KEY_SCREEN_HEIGHT_ROW_SIZE = "SCREEN_HEIGHT_ROW_SIZE"
 KEY_IDENTIFIER_KEY_COUNT = "IDENTIFIER_KEY_COUNT"
-
-APP_TITLE = 'Mouse-Free-Application'

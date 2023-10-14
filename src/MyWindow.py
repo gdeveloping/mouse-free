@@ -21,9 +21,8 @@ from KeyboardListener import KeyboardListener
 
 
 class MyWindow(QWidget):
+    @log_function_name_in_debug_level_to_enter_exit
     def __init__(self, app: QApplication):
-        log_function_name_to_enter()
-
         super(MyWindow, self).__init__()
 
         self.app = app
@@ -78,9 +77,8 @@ class MyWindow(QWidget):
         self.keyboard_listener.simulate_mouse_click_right_signal.connect(self.my_simulate_mouse_click_right)
         self.keyboard_listener.start()
 
-        log_function_name_to_exit()
 
-
+    @log_function_name_in_debug_level_to_enter_exit
     def update_current_screen(self):
         cursor = QCursor()
         current_screen = self.app.screenAt(cursor.pos())
@@ -101,9 +99,8 @@ class MyWindow(QWidget):
         logger.info('screen count: {}; current screen index: {}; current screen is primary screen: {}'.format(len(screens), screen_index, is_primary_screen))
 
 
+    @log_function_name_in_debug_level_to_enter_exit
     def init_ui(self):
-        log_function_name_to_enter()
-
         # 幕布透明度
         self.setWindowOpacity(TRANSPARENCY / 100)
         # 隐藏边框，顶层显示
@@ -120,13 +117,10 @@ class MyWindow(QWidget):
 
         self.showFullScreen()
         self.post_show_window()
-
-        log_function_name_to_exit()
      
         
+    @log_function_name_in_debug_level_to_enter_exit
     def paintEvent(self, event):
-        log_function_name_to_enter()
-
         try:
             current_font_size = self.get_current_font_size()
             current_cell_width_column_size = self.get_current_cell_width_column_size()
@@ -163,7 +157,7 @@ class MyWindow(QWidget):
 
             painter = QPainter()
             painter.begin(self)
-            painter.setFont(QFont('Arial', current_font_size))
+            painter.setFont(QFont('Arial', int(current_font_size)))
             painter.setPen(QColor(*IDENTIFIER_FONT_COLOR))
             
             identifier_count = 0            
@@ -181,8 +175,6 @@ class MyWindow(QWidget):
         except Exception as e:
             logger.error('paintEvent Exception: {}'.format(e.with_traceback))
             traceback.print_exc()
-        
-        log_function_name_to_exit()
 
 
     def get_current_screen_size_config(self):
@@ -204,7 +196,7 @@ class MyWindow(QWidget):
 
 
     def get_current_font_size(self):
-        return self.get_current_screen_size_config()[KEY_FONT_SIZE]
+        return self.get_current_screen_size_config()['FONT_SIZE']
 
 
     def get_current_cell_width_column_size(self):
@@ -219,17 +211,15 @@ class MyWindow(QWidget):
         return self.get_current_screen_size_config()[KEY_IDENTIFIER_KEY_COUNT]
 
 
+    @log_function_name_in_debug_level_to_enter_exit
     def quit_app(self):
-        log_function_name_to_enter()
-
         logger.info('quit sys')
         self.hide()
         sys.exit(0)
 
     
+    @log_function_name_in_debug_level_to_enter_exit
     def handle_keyboard(self, e):
-        log_function_name_to_enter()        
-
         identifier_key_count = self.get_current_identifier_key_count()
         # len - x = count - 1
         for _ in range(0, len(self.keys) - identifier_key_count + 1):
@@ -237,8 +227,6 @@ class MyWindow(QWidget):
         self.keys.append(str(e.name).upper())
         if len(self.keys) == identifier_key_count and self.isVisible():
             self.move_mouse()
-
-        log_function_name_to_exit()
 
     
     def get_cell_identifier(self, column_width, row_height):
@@ -251,6 +239,7 @@ class MyWindow(QWidget):
             return string.ascii_uppercase[idx % len(string.ascii_uppercase)]
     
 
+    @log_function_name_in_debug_level_to_enter_exit
     def get_target_mouse_position(self):
         x_position_in_current_screen = 0
         y_position_in_current_screen = 0
@@ -272,13 +261,13 @@ class MyWindow(QWidget):
         return x_position_in_current_screen + self.x_start_of_current_screen, y_position_in_current_screen + self.y_start_of_current_screen
 
 
+    @log_function_name_in_debug_level_to_enter_exit
     def is_match_hotkey(self, expect_key, actual_key):
         return len(expect_key.symmetric_difference(actual_key)) == 0
 
 
+    @log_function_name_in_debug_level_to_enter_exit
     def move_mouse(self):
-        log_function_name_to_enter()
-
         if len(self.keys) != self.get_current_identifier_key_count():
             logger.info('exit {}: not valid key count'.format(get_current_function_name()))
             return
@@ -307,55 +296,48 @@ class MyWindow(QWidget):
         # after mouse position changed
         self.keys.clear()
         self.my_hide()
-        
-        log_function_name_to_exit()
 
 
+    @log_function_name_in_debug_level_to_enter_exit
     def my_hide(self):
-        log_function_name_to_enter()
-
         # 屏幕恢复默认级别
         self.screen_level = LEVEL_DEFAULT
         self.hide()
-        
-        log_function_name_to_exit()
     
 
+    @log_function_name_in_debug_level_to_enter_exit
     def my_delayed_hide_task(self):
-        log_function_name_to_enter()
-
         current = get_timestamp_ms()
         if current - self.latest_show_timestamp >= DELAY_HIDE_TIME * 1000:
             self.my_hide()
         else:
             logger.debug("Cancel delayed hide task.")
 
-        log_function_name_to_exit()
 
-
+    @log_function_name_in_debug_level_to_enter_exit
     def my_delayed_hide(self):
-        log_function_name_to_enter()
-
         timer = threading.Timer(DELAY_HIDE_TIME, self.my_delayed_hide_task)
         timer.start()
         self.executor_pool.submit(timer)
 
-        log_function_name_to_exit()
 
-
+    @log_function_name_in_debug_level_to_enter_exit
     def set_show_latest_time(self):
         self.latest_show_timestamp = get_timestamp_ms()
 
 
+    @log_function_name_in_debug_level_to_enter_exit
     def post_show_window(self):
         self.set_show_latest_time()
         self.my_delayed_hide()
 
 
+    @log_function_name_in_debug_level_to_enter_exit
     def record_current_mouse_position(self):
         self.x_old, self.y_old = mouse.Controller().position
 
 
+    @log_function_name_in_debug_level_to_enter_exit
     def my_show_window_common(self):
         self.record_current_mouse_position()
         self.show_top_application()
@@ -366,27 +348,20 @@ class MyWindow(QWidget):
         self.post_show_window()
 
 
+    @log_function_name_in_debug_level_to_enter_exit
     def my_show_full_window(self):
-        log_function_name_to_enter()
-
         self.screen_level = LEVEL_1
         self.my_show_window_common()
-        
-        log_function_name_to_exit()
 
     
+    @log_function_name_in_debug_level_to_enter_exit
     def my_show_detail_window(self):
-        log_function_name_to_enter()
-
         self.screen_level = LEVEL_2
         self.my_show_window_common()
-        
-        log_function_name_to_exit()
 
 
+    @log_function_name_in_debug_level_to_enter_exit
     def switch_screen(self):
-        log_function_name_to_enter()
-
         cursor = QCursor()
         cursor_screen = self.app.screenAt(cursor.pos())
         screens = self.app.screens() 
@@ -399,44 +374,35 @@ class MyWindow(QWidget):
                 mouse.Controller().position = (x_position, y_position)
                 break
         logger.info("switch screen and cursor now in ({}, {})".format(x_position, y_position))
-
-        log_function_name_to_exit()
         
 
+    @log_function_name_in_debug_level_to_enter_exit
     def my_show_window_in_switched_screen(self):
-        log_function_name_to_enter()
-
         self.screen_level = LEVEL_1
         self.switch_screen()
         self.my_show_window_common()
-        
-        log_function_name_to_exit()
 
 
+    @log_function_name_in_debug_level_to_enter_exit
     def my_simulate_mouse_click_left(self):
-        log_function_name_to_enter()
         logger.info('left single click')
         self.my_simulate_mouse_click_common_task(mouse.Button.left, 1)
-        log_function_name_to_exit()
 
 
+    @log_function_name_in_debug_level_to_enter_exit
     def my_simulate_mouse_click_left_double(self):
-        log_function_name_to_enter()
         logger.info('left double click')
         self.my_simulate_mouse_click_common_task(mouse.Button.left, 2)
-        log_function_name_to_exit()
 
 
+    @log_function_name_in_debug_level_to_enter_exit
     def my_simulate_mouse_click_right(self):
-        log_function_name_to_enter()
         logger.info('right click')
         self.my_simulate_mouse_click_common_task(mouse.Button.right, 1)
-        log_function_name_to_exit()
 
 
+    @log_function_name_in_debug_level_to_enter_exit
     def my_simulate_mouse_click_common_task(self, button, click_times):
-        log_function_name_to_enter()
-
         if self.isVisible():
             with mouse.Controller() as controller:
                 x_position, y_position = controller.position
@@ -463,11 +429,9 @@ class MyWindow(QWidget):
         else:
             logger.info("The mouse click operation is invalid, cause window is not visible.")
 
-        log_function_name_to_exit()
 
-
+    @log_function_name_in_debug_level_to_enter_exit
     def handle_window_on_top(self):
-        log_function_name_to_enter()
         # set top
         try:
             window_item = gw.getWindowsWithTitle(self.window_tile)[0]
@@ -478,16 +442,12 @@ class MyWindow(QWidget):
             logger.error('handle_window_on_top Exception: {}'.format(e.with_traceback))
             traceback.print_exc()
 
-        log_function_name_to_exit()
 
-
+    @log_function_name_in_debug_level_to_enter_exit
     def show_top_application(self):
-        log_function_name_to_enter()
-
         active_window = gw.getActiveWindow()
         if active_window == None:
             logger.info('no activate window')
-            log_function_name_to_exit()
             return
         top_app = Application().connect(handle=active_window._hWnd)
         pid = top_app.process
@@ -498,6 +458,3 @@ class MyWindow(QWidget):
             logger.info('The top-level software is IntelliJ IDEA.')
         else:
             logger.info('The top-level software is {}'.format(exe_name))
-
-        log_function_name_to_exit()
-
