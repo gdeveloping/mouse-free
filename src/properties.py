@@ -1,6 +1,7 @@
 
 from utils import *
 
+
 APP_TITLE = 'Mouse-Free-Application'
 
 CONFIG_FILE_NAME = 'mouse-free.config'
@@ -24,28 +25,24 @@ LOG_FILE_PATH = properties['LOG_FILE_PATH']
 LOG_LEVEL = str_to_log_level(str(properties['LOG_LEVEL']).strip().upper())
 
 
-# screen
+# screen common
 MAX_CELL_LEVEL = 2 # max level， start from 1
+TRANSPARENCY = int(properties['TRANSPARENCY']) 
+DELAY_HIDE_TIME = int(properties['DELAY_HIDE_TIME']) 
+BACKGROUND_COLOR = get_tuple_number_from_str(properties['BACKGROUND_COLOR'])
+IDENTIFIER_FONT_COLOR = get_tuple_number_from_str(properties['IDENTIFIER_FONT_COLOR'])
+THREAD_POOL_MAX_WORKERS = int(properties['THREAD_POOL_MAX_WORKERS']) 
 
-# customizable configuration
-TRANSPARENCY = 50  # N / 100
-DELAY_HIDE_TIME = 5 # second
-BACKGROUND_COLOR = (173, 216, 230) 
-IDENTIFIER_FONT_COLOR = (0, 0, 0)
-THREAD_POOL_MAX_WORKERS = 5 
-
-# customizable configuration
-CELL_WIDTH_COLUMN_SIZE = 75  # level 1 cell width
-CELL_HEIGHT_ROW_SIZE = 45  # level 1 cell height
-FONT_SIZE = 12  # level 1 font size
-# fixed configuration
+# level 1
+CELL_WIDTH_COLUMN_SIZE = int(properties['CELL_WIDTH_COLUMN_SIZE'])  # level 1 cell width
+CELL_HEIGHT_ROW_SIZE = int(properties['CELL_HEIGHT_ROW_SIZE'])  # level 1 cell height
+FONT_SIZE = int(properties['FONT_SIZE'])  # level 1 font size
 IDENTIFIER_KEY_COUNT = 2
 
-# customizable configuration
-CELL_WIDTH_COLUMN_SIZE_LEVEL2 = 12 # level 2 cell width
-CELL_HEIGHT_ROW_SIZE_LEVEL2 = 12 # level 2 cell height
-FONT_SIZE_LEVEL2 = 8 # level 2 font size
-# fixed configuration
+# level 2
+CELL_WIDTH_COLUMN_SIZE_LEVEL2 = int(properties['CELL_WIDTH_COLUMN_SIZE_LEVEL2'])  # level 2 cell width
+CELL_HEIGHT_ROW_SIZE_LEVEL2 = int(properties['CELL_HEIGHT_ROW_SIZE_LEVEL2'])  # level 2 cell height
+FONT_SIZE_LEVEL2 = int(properties['FONT_SIZE_LEVEL2'])  # level 2 font size
 IDENTIFIER_KEY_COUNT_LEVEL2 = 1
 CELL_COUNT_PER_WIDTH_PER_HEIGHT_LEVEL2 = 5
 SCREEN_WIDTH_COLUMN_SIZE_LEVEL2 = CELL_WIDTH_COLUMN_SIZE_LEVEL2 * CELL_COUNT_PER_WIDTH_PER_HEIGHT_LEVEL2

@@ -3,6 +3,7 @@ from pyjavaproperties import Properties
 import logging
 import time
 import sys
+import re
 
 
 def build_config_logger(log_level, log_file_path):
@@ -56,3 +57,7 @@ def get_current_function_name():
 
 def is_valid_single_alpha(key):
     return len(str(key)) == 1 and str(key).isalpha()
+
+
+def get_tuple_number_from_str(str):
+    return tuple(map(int, re.findall(r'\d+', str)))
