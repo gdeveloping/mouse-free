@@ -18,6 +18,8 @@ KEYBOARD_QUIT_HOTKEY = properties['KEYBOARD_QUIT_HOTKEY']
 KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY = properties['KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY']
 KEYBOARD_MOUSE_CLICK_LEFT_DOUBLE_HOTKEY = properties['KEYBOARD_MOUSE_CLICK_LEFT_DOUBLE_HOTKEY']
 KEYBOARD_MOUSE_CLICK_RIGHT_HOTKEY = properties['KEYBOARD_MOUSE_CLICK_RIGHT_HOTKEY']
+KEYBOARD_SHOW_HOTKEY_OF_TOP_APP = properties['KEYBOARD_SHOW_HOTKEY_OF_TOP_APP']
+
 
 # log file path
 LOG_FILE_PATH = properties['LOG_FILE_PATH']
@@ -48,10 +50,13 @@ CELL_COUNT_PER_WIDTH_PER_HEIGHT_LEVEL2 = 5
 SCREEN_WIDTH_COLUMN_SIZE_LEVEL2 = CELL_WIDTH_COLUMN_SIZE_LEVEL2 * CELL_COUNT_PER_WIDTH_PER_HEIGHT_LEVEL2
 SCREEN_HEIGHT_ROW_SIZE_LEVEL2 = CELL_HEIGHT_ROW_SIZE_LEVEL2 * CELL_COUNT_PER_WIDTH_PER_HEIGHT_LEVEL2
 
+# level 3
+FONT_SIZE_LEVEL3 = 15
 
 # constant
 LEVEL_1 = "LEVEL_1"
 LEVEL_2 = "LEVEL_2"
+LEVEL_3 = "LEVEL_3"
 LEVEL_DEFAULT = LEVEL_1
 
 KEY_CELL_WIDTH_COLUMN_SIZE = "CELL_WIDTH_COLUMN_SIZE"
@@ -60,3 +65,25 @@ KEY_FONT_SIZE = "FONT_SIZE"
 KEY_SCREEN_WIDTH_COLUMN_SIZE = "SCREEN_WIDTH_COLUMN_SIZE"
 KEY_SCREEN_HEIGHT_ROW_SIZE = "SCREEN_HEIGHT_ROW_SIZE"
 KEY_IDENTIFIER_KEY_COUNT = "IDENTIFIER_KEY_COUNT"
+
+
+idea_shortcuts = {
+    'Ctrl + N': 'Go to class',
+    'Ctrl + Shift + N': 'Go to file',
+    'Ctrl + Alt + L': 'Reformat code',
+    'Alt + Enter': 'Show intention actions and quick-fixes',
+    'Ctrl + Alt + O': 'Optimize imports',
+    'Ctrl + E': 'Recent files popup',
+    'Ctrl + Space': 'Basic code completion',
+    'Ctrl + Shift + Space': 'Smart code completion',
+    'Ctrl + /': 'Comment/uncomment with line comment',
+    'Ctrl + Shift + /': 'Comment/uncomment with block comment',
+    'Ctrl + B': 'Go to declaration',
+    'Ctrl + Shift + I': 'Quick definition lookup',
+    'Ctrl + Q': 'Quick documentation lookup',
+    'Ctrl + P': 'Parameter info',
+    'Ctrl + Shift + F7': 'Highlight usages in file',
+    'Ctrl + F12': 'File structure popup',
+    'Alt + 1': 'Project view',
+    'Alt + 2': 'Favorites'
+}

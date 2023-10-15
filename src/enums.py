@@ -1,0 +1,6 @@
+from enum import Enum
+
+class WindowAaction(Enum):
+    IDENTIFY_WINDOW = 'IDENTIFY_WINDOW'
+    DISPLAY_APP_HOTKEY = 'DISPLAY_APP_HOTKEY'
+    DEFAULT = IDENTIFY_WINDOW

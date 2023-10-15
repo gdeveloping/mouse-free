@@ -1,5 +1,5 @@
 
-from PyQt5.QtWidgets import QApplication, QWidget, QDesktopWidget
+from PyQt5.QtWidgets import QApplication, QWidget, QDesktopWidget, QLabel, QVBoxLayout, QGridLayout, QFormLayout
 from PyQt5.QtGui import QPainter, QColor, QFont, QCursor
 from PyQt5.QtCore import Qt
 from pynput import mouse
@@ -13,10 +13,14 @@ import pygetwindow as gw
 from pywinauto import Application
 import psutil
 import os
+import math
+
 from common_utils import *
 from properties import *
 from log_utils import *
-from keyboard_listener import KeyboardListener
+from enums import *
+from keyboard_listener import *
+from dto import *
 
 
 
@@ -41,7 +45,13 @@ class MainWindow(QWidget):
                 KEY_SCREEN_WIDTH_COLUMN_SIZE: SCREEN_WIDTH_COLUMN_SIZE_LEVEL2,
                 KEY_SCREEN_HEIGHT_ROW_SIZE: SCREEN_HEIGHT_ROW_SIZE_LEVEL2,
                 KEY_IDENTIFIER_KEY_COUNT: IDENTIFIER_KEY_COUNT_LEVEL2
-            }
+            },
+            LEVEL_3: {
+                KEY_CELL_WIDTH_COLUMN_SIZE: CELL_WIDTH_COLUMN_SIZE,
+                KEY_CELL_HEIGHT_ROW_SIZE: CELL_HEIGHT_ROW_SIZE,
+                KEY_FONT_SIZE: FONT_SIZE_LEVEL3,
+                KEY_IDENTIFIER_KEY_COUNT: IDENTIFIER_KEY_COUNT
+            },
         }
         logger.info('screen_size_config: {}'.format(self.screen_size_config))
 
@@ -49,12 +59,15 @@ class MainWindow(QWidget):
 
         self.desktop = QDesktopWidget()
 
-        self.screen_level = LEVEL_DEFAULT        
+        self.screen_level = LEVEL_DEFAULT
+        self.action = WindowAaction.IDENTIFY_WINDOW        
 
         self.x_start_of_current_screen = 0
         self.y_start_of_current_screen = 0
         self.x_start_in_current_screen = 0
         self.y_start_in_current_screen = 0
+
+        self.app_name = APP_TITLE
 
         self.keys = []
 
@@ -75,6 +88,7 @@ class MainWindow(QWidget):
         self.keyboard_listener.simulate_mouse_click_left_signal.connect(self.my_simulate_mouse_click_left)       
         self.keyboard_listener.simulate_mouse_click_left_double_signal.connect(self.my_simulate_mouse_click_left_double)
         self.keyboard_listener.simulate_mouse_click_right_signal.connect(self.my_simulate_mouse_click_right)
+        self.keyboard_listener.show_hotkey_of_top_level_app.connect(self.my_show_hotkey_of_top_level_app)
         self.keyboard_listener.start()
 
 
@@ -130,17 +144,17 @@ class MainWindow(QWidget):
             self.setGeometry(self.x_start_of_current_screen, self.y_start_of_current_screen, 
                              self.width_of_current_screen, self.height_of_current_screen)
 
-            if self.screen_level == LEVEL_1:
-                current_screen_width_column_size = self.get_current_screen_width_column_size()
-                current_screen_height_row_size = self.get_current_screen_height_row_size()
-                self.x_start_in_current_screen = 0
-                self.y_start_in_current_screen = 0
-            else:
+            if self.screen_level == LEVEL_2:
                 x, y = mouse.Controller().position
                 current_screen_width_column_size = self.get_current_screen_size_config()[KEY_SCREEN_WIDTH_COLUMN_SIZE]
                 current_screen_height_row_size = self.get_current_screen_size_config()[KEY_SCREEN_HEIGHT_ROW_SIZE]
                 self.x_start_in_current_screen = max(0, x - current_screen_width_column_size // 2 - self.x_start_of_current_screen)
                 self.y_start_in_current_screen = max(0, y - current_screen_height_row_size // 2 - self.y_start_of_current_screen)
+            else:
+                current_screen_width_column_size = self.get_current_screen_width_column_size()
+                current_screen_height_row_size = self.get_current_screen_height_row_size()
+                self.x_start_in_current_screen = 0
+                self.y_start_in_current_screen = 0
 
             logger.debug('screenGeometry: {}, {}'.format(current_screen_width_column_size, current_screen_height_row_size))
 
@@ -154,27 +168,95 @@ class MainWindow(QWidget):
                 self.width(),
                 self.height()
             ))
-
-            painter = QPainter()
-            painter.begin(self)
-            painter.setFont(QFont('Arial', int(current_font_size)))
-            painter.setPen(QColor(*IDENTIFIER_FONT_COLOR))
             
-            identifier_count = 0            
-            for width_column_idx in range(0, current_screen_width_column_size, current_cell_width_column_size):
-                for height_row_idx in range(0, current_screen_height_row_size, current_cell_height_row_size):
-                    painter.drawText(current_cell_width_column_size // 2 + width_column_idx + self.x_start_in_current_screen, 
-                                     current_cell_height_row_size // 2 + height_row_idx + self.y_start_in_current_screen, 
-                                     str(self.get_cell_identifier(width_column_idx, height_row_idx)))
-                    identifier_count += 1
-            logger.debug("identifier count: {}".format(identifier_count))
+            window_properity = WindownProperty(current_screen_width_column_size,
+                                                current_screen_height_row_size,
+                                                current_cell_width_column_size,
+                                                current_cell_height_row_size,
+                                                current_font_size,
+                                                self.x_start_in_current_screen,
+                                                self.y_start_in_current_screen)
             
-            painter.end()
+            if self.action == WindowAaction.DISPLAY_APP_HOTKEY:
+                self.paint_display_hotkey(window_properity)
+            else:
+                self.paint_to_identify_window(window_properity)
 
             mouse.Controller().position = (self.x_old, self.y_old)
         except Exception as e:
             logger.error('paintEvent Exception: {}'.format(e.with_traceback))
             traceback.print_exc()
+
+    
+    def paint_display_hotkey(self, window_properity: WindownProperty):
+        layout = QGridLayout()
+        self.setLayout(layout)
+
+        # left key, left value, space, right key, right value, space
+        column_count = 6
+        title_lable = QLabel('HOTKEY', self)
+        font = QFont('Arial', int(window_properity.current_font_size))
+        title_lable.setFont(font)
+        layout.addWidget(title_lable, 0, 0, 1, column_count, Qt.AlignmentFlag.AlignCenter)
+
+        logger.info("app name: {}".format(self.app_name))
+        logger.info("is idea: {}".format(self.app_name == "idea"))
+        shortcuts = {}
+        if self.app_name == "idea":
+            shortcuts = idea_shortcuts
+            
+        sorted_hotkeys = sorted(shortcuts.items())
+        len_all = len(sorted_hotkeys)
+        logger.info("hotkey len: {}".format(len_all))
+        len_half = math.ceil((len(sorted_hotkeys) + 1) / 2)
+        if len_all == 0:
+            return
+
+        for idx_item, entry in enumerate(sorted_hotkeys[0: len_half]):
+            idx_row = idx_item + 1
+
+            key = entry[0]
+            value = entry[1]
+            key_label = QLabel(key, self)
+            key_label.setFont(font)
+            key_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            value_label = QLabel(value, self)
+            value_label.setFont(font)
+            value_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            layout.addWidget(key_label, idx_row, 0)
+            layout.addWidget(value_label, idx_row, 1)
+
+            right_idx = idx_item + len_half
+            if right_idx >= len_all:
+                continue
+            key = sorted_hotkeys[right_idx][0]
+            value = sorted_hotkeys[right_idx][1]
+            key_label = QLabel(key, self)
+            key_label.setFont(font)
+            key_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            value_label = QLabel(value, self)
+            value_label.setFont(font)
+            value_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            # skip a column
+            layout.addWidget(key_label, idx_row, 3)
+            layout.addWidget(value_label, idx_row, 4)
+
+
+    def paint_to_identify_window(self, window_properity: WindownProperty):
+        painter = QPainter()
+        painter.begin(self)
+        font = QFont('Arial', int(window_properity.current_font_size))
+        painter.setFont(font)
+        painter.setPen(QColor(*IDENTIFIER_FONT_COLOR))
+        identifier_count = 0            
+        for width_column_idx in range(0, window_properity.current_screen_width_column_size, window_properity.current_cell_width_column_size):
+            for height_row_idx in range(0, window_properity.current_screen_height_row_size, window_properity.current_cell_height_row_size):
+                painter.drawText(window_properity.current_cell_width_column_size // 2 + width_column_idx + self.x_start_in_current_screen, 
+                                window_properity.current_cell_height_row_size // 2 + height_row_idx + self.y_start_in_current_screen, 
+                                str(self.get_cell_identifier(width_column_idx, height_row_idx)))
+                identifier_count += 1
+        painter.end()
+        logger.debug("identifier count: {}".format(identifier_count))
 
 
     def get_current_screen_size_config(self):
@@ -182,21 +264,21 @@ class MainWindow(QWidget):
     
 
     def get_current_screen_width_column_size(self):
-        if self.screen_level == LEVEL_1:
-            return self.desktop.screenGeometry().width()
-        else:
+        if self.screen_level == LEVEL_2:
             return self.get_current_screen_size_config()[KEY_SCREEN_WIDTH_COLUMN_SIZE]
+        else:
+            return self.desktop.screenGeometry().width()
 
 
     def get_current_screen_height_row_size(self):
-        if self.screen_level == LEVEL_1:
-            return self.desktop.screenGeometry().height()
-        else:
+        if self.screen_level == LEVEL_2:
             return self.get_current_screen_size_config()[KEY_SCREEN_HEIGHT_ROW_SIZE]       
+        else:
+            return self.desktop.screenGeometry().height()
 
 
     def get_current_font_size(self):
-        return self.get_current_screen_size_config()['FONT_SIZE']
+        return self.get_current_screen_size_config()[KEY_FONT_SIZE]
 
 
     def get_current_cell_width_column_size(self):
@@ -302,6 +384,7 @@ class MainWindow(QWidget):
     def my_hide(self):
         # 屏幕恢复默认级别
         self.screen_level = LEVEL_DEFAULT
+        self.action = WindowAaction.DEFAULT
         self.hide()
     
 
@@ -340,7 +423,6 @@ class MainWindow(QWidget):
     @log_function_name_in_debug_level_to_enter_exit
     def my_show_window_common(self):
         self.record_current_mouse_position()
-        self.show_top_application()
         self.hide()
         self.update_current_screen()
         self.showFullScreen()
@@ -351,12 +433,14 @@ class MainWindow(QWidget):
     @log_function_name_in_debug_level_to_enter_exit
     def my_show_full_window(self):
         self.screen_level = LEVEL_1
+        self.action = WindowAaction.IDENTIFY_WINDOW
         self.my_show_window_common()
 
     
     @log_function_name_in_debug_level_to_enter_exit
     def my_show_detail_window(self):
         self.screen_level = LEVEL_2
+        self.action = WindowAaction.IDENTIFY_WINDOW
         self.my_show_window_common()
 
 
@@ -379,6 +463,7 @@ class MainWindow(QWidget):
     @log_function_name_in_debug_level_to_enter_exit
     def my_show_window_in_switched_screen(self):
         self.screen_level = LEVEL_1
+        self.action = WindowAaction.IDENTIFY_WINDOW
         self.switch_screen()
         self.my_show_window_common()
 
@@ -444,17 +529,26 @@ class MainWindow(QWidget):
 
 
     @log_function_name_in_debug_level_to_enter_exit
-    def show_top_application(self):
+    def get_top_application_name(self):
         active_window = gw.getActiveWindow()
         if active_window == None:
             logger.info('no activate window')
-            return
+            return ""
         top_app = Application().connect(handle=active_window._hWnd)
         pid = top_app.process
         p = psutil.Process(pid)
         exe_path = p.exe()
-        exe_name = exe_path.split(os.path.sep)[-1].removesuffix('.exe').removesuffix('64')
-        if "idea" == exe_name:
+        app_name = exe_path.split(os.path.sep)[-1].removesuffix('.exe').removesuffix('64')
+        if "idea" == app_name:
             logger.info('The top-level software is IntelliJ IDEA.')
         else:
-            logger.info('The top-level software is {}'.format(exe_name))
+            logger.info('The top-level software is {}'.format(app_name))
+        return app_name
+
+
+    @log_function_name_in_debug_level_to_enter_exit
+    def my_show_hotkey_of_top_level_app(self):
+        self.screen_level = LEVEL_3
+        self.action = WindowAaction.DISPLAY_APP_HOTKEY
+        self.app_name = self.get_top_application_name()
+        self.my_show_window_common()

@@ -15,6 +15,8 @@ class KeyboardListener(QThread):
     simulate_mouse_click_left_signal = pyqtSignal()
     simulate_mouse_click_left_double_signal = pyqtSignal()
     simulate_mouse_click_right_signal = pyqtSignal()
+    show_hotkey_of_top_level_app = pyqtSignal()
+
 
     @log_function_name_in_debug_level_to_enter_exit
     def __init__(self, logger):
@@ -29,7 +31,8 @@ class KeyboardListener(QThread):
             self.quit_signal: KEYBOARD_QUIT_HOTKEY,
             self.simulate_mouse_click_left_signal: KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY,
             self.simulate_mouse_click_left_double_signal: KEYBOARD_MOUSE_CLICK_LEFT_DOUBLE_HOTKEY,
-            self.simulate_mouse_click_right_signal: KEYBOARD_MOUSE_CLICK_RIGHT_HOTKEY            
+            self.simulate_mouse_click_right_signal: KEYBOARD_MOUSE_CLICK_RIGHT_HOTKEY,
+            self.show_hotkey_of_top_level_app: KEYBOARD_SHOW_HOTKEY_OF_TOP_APP            
         }
         
         keyboard.on_press(self.async_key_press)
@@ -41,6 +44,7 @@ class KeyboardListener(QThread):
         keyboard.add_hotkey(KEYBOARD_MOUSE_CLICK_LEFT_HOTKEY, self.async_simulate_mouse_click_left)
         keyboard.add_hotkey(KEYBOARD_MOUSE_CLICK_LEFT_DOUBLE_HOTKEY, self.async_simulate_mouse_click_left_double)
         keyboard.add_hotkey(KEYBOARD_MOUSE_CLICK_RIGHT_HOTKEY, self.async_simulate_mouse_click_right)
+        keyboard.add_hotkey(KEYBOARD_SHOW_HOTKEY_OF_TOP_APP, self.async_show_hotkey_of_top_level_app)
      
 
     @log_function_name_in_debug_level_to_enter_exit
@@ -95,6 +99,12 @@ class KeyboardListener(QThread):
     def async_simulate_mouse_click_right(self):
         keyboard.release(self.signal_hotkey_map[self.simulate_mouse_click_right_signal])
         self.simulate_mouse_click_right_signal.emit()
+
+    
+    @log_function_name_in_debug_level_to_enter_exit
+    def async_show_hotkey_of_top_level_app(self):
+        keyboard.release(self.signal_hotkey_map[self.show_hotkey_of_top_level_app])
+        self.show_hotkey_of_top_level_app.emit()
 
 
     @log_function_name_in_debug_level_to_enter_exit
