@@ -1,10 +1,10 @@
 
-from utils import *
+from common_utils import *
 
 
 APP_TITLE = 'Mouse-Free-Application'
 
-CONFIG_FILE_NAME = 'mouse-free.config'
+CONFIG_FILE_NAME = 'mouse-free.properties'
 
 properties = get_config_from_properties_file(CONFIG_FILE_NAME)
 

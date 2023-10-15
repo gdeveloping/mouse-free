@@ -1,11 +1,12 @@
 
-from utils import *
+from common_utils import *
 from properties import *
 from functools import wraps
 
 
 # logger
 logger = build_config_logger(LOG_LEVEL, LOG_FILE_PATH)
+
 
 
 def log_function_name_in_debug_level_to_enter_exit(func):

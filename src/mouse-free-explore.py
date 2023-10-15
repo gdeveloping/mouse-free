@@ -1,11 +1,11 @@
 from PyQt5.QtWidgets import QApplication
 import sys
-from MyWindow import MyWindow
+from window import MainWindow
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
 
-    window = MyWindow(app)
+    window = MainWindow(app)
 
     sys.exit(app.exec_())

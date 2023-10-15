@@ -1,6 +1,6 @@
 from PyQt5.QtCore import QThread, pyqtSignal
 import keyboard
-from utils import *
+from common_utils import *
 from properties import *
 from log_utils import *
 

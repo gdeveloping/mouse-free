@@ -13,17 +13,17 @@ import pygetwindow as gw
 from pywinauto import Application
 import psutil
 import os
-from utils import *
+from common_utils import *
 from properties import *
 from log_utils import *
-from KeyboardListener import KeyboardListener
+from keyboard_listener import KeyboardListener
 
 
 
-class MyWindow(QWidget):
+class MainWindow(QWidget):
     @log_function_name_in_debug_level_to_enter_exit
     def __init__(self, app: QApplication):
-        super(MyWindow, self).__init__()
+        super(MainWindow, self).__init__()
 
         self.app = app
 
