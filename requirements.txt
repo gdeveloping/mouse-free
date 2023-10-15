@@ -1,6 +1,8 @@
 keyboard==0.13.5
+psutil==5.9.5
 PyGetWindow==0.0.9
+pyjavaproperties==0.7
 pynput==1.7.6
-PyQt5==5.15.9
+PyQt5==5.15.10
 PyQt5_sip==12.12.2
 pywinauto==0.6.8
