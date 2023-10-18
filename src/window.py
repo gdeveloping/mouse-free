@@ -94,27 +94,6 @@ class MainWindow(QWidget):
 
 
     @log_function_name_in_debug_level_to_enter_exit
-    def update_current_screen(self):
-        cursor = QCursor()
-        current_screen = self.app.screenAt(cursor.pos())
-
-        self.x_start_of_current_screen = current_screen.geometry().left()
-        self.y_start_of_current_screen = current_screen.geometry().top()
-        self.width_of_current_screen = current_screen.geometry().width()
-        self.height_of_current_screen = current_screen.geometry().height()
-
-        logger.info('cursor position: ({}, {}); current screen geometry: ({}, {}, {}, {})'.format(
-            cursor.pos().x(), cursor.pos().y(), 
-            self.x_start_of_current_screen, self.y_start_of_current_screen,
-            self.width_of_current_screen, self.height_of_current_screen))
-
-        screens = self.app.screens() 
-        screen_index = screens.index(current_screen)
-        is_primary_screen = current_screen == self.app.primaryScreen()
-        logger.info('screen count: {}; current screen index: {}; current screen is primary screen: {}'.format(len(screens), screen_index, is_primary_screen))
-
-
-    @log_function_name_in_debug_level_to_enter_exit
     def init_ui(self):
         # 幕布透明度
         self.setWindowOpacity(TRANSPARENCY / 100)
@@ -122,18 +101,45 @@ class MainWindow(QWidget):
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         # 隐藏窗口在任务栏的展示
         self.setWindowFlags(Qt.Tool)
+        # 窗口名称
         self.window_tile = APP_TITLE
         self.setWindowTitle(self.window_tile)
 
-        p = self.palette()
-        bg_color = QColor(*BACKGROUND_COLOR)
-        p.setColor(self.backgroundRole(), bg_color)
-        self.setPalette(p) 
+        self.bg_color = QColor(*BACKGROUND_COLOR)
+        self.palette = self.palette()
+        self.palette.setColor(self.backgroundRole(), self.bg_color)
+        self.setPalette(self.palette) 
 
         self.showFullScreen()
         self.post_show_window()
-     
-        
+
+
+    @log_function_name_in_debug_level_to_enter_exit
+    def my_show_full_window(self):
+        self.screen_level = LEVEL_1
+        self.action = WindowAaction.IDENTIFY_WINDOW
+        self.clean_layout(self.layout)
+        self.my_show_window_common()
+
+    
+    @log_function_name_in_debug_level_to_enter_exit
+    def my_show_detail_window(self):
+        self.screen_level = LEVEL_2
+        self.action = WindowAaction.IDENTIFY_WINDOW
+        self.clean_layout(self.layout)
+        self.my_show_window_common()
+ 
+
+    @log_function_name_in_debug_level_to_enter_exit
+    def my_show_hotkey_of_top_level_app(self):
+        self.screen_level = LEVEL_3
+        self.action = WindowAaction.DISPLAY_APP_HOTKEY
+        self.app_name = self.get_top_application_name()
+        self.clean_layout(self.layout)
+        self.paint_display_hotkey()
+        self.my_show_window_common()
+
+
     @log_function_name_in_debug_level_to_enter_exit
     def paintEvent(self, event):
         try:
@@ -443,19 +449,24 @@ class MainWindow(QWidget):
 
 
     @log_function_name_in_debug_level_to_enter_exit
-    def my_show_full_window(self):
-        self.screen_level = LEVEL_1
-        self.action = WindowAaction.IDENTIFY_WINDOW
-        self.clean_layout(self.layout)
-        self.my_show_window_common()
+    def update_current_screen(self):
+        cursor = QCursor()
+        current_screen = self.app.screenAt(cursor.pos())
 
-    
-    @log_function_name_in_debug_level_to_enter_exit
-    def my_show_detail_window(self):
-        self.screen_level = LEVEL_2
-        self.action = WindowAaction.IDENTIFY_WINDOW
-        self.clean_layout(self.layout)
-        self.my_show_window_common()
+        self.x_start_of_current_screen = current_screen.geometry().left()
+        self.y_start_of_current_screen = current_screen.geometry().top()
+        self.width_of_current_screen = current_screen.geometry().width()
+        self.height_of_current_screen = current_screen.geometry().height()
+
+        logger.info('cursor position: ({}, {}); current screen geometry: ({}, {}, {}, {})'.format(
+            cursor.pos().x(), cursor.pos().y(), 
+            self.x_start_of_current_screen, self.y_start_of_current_screen,
+            self.width_of_current_screen, self.height_of_current_screen))
+
+        screens = self.app.screens() 
+        screen_index = screens.index(current_screen)
+        is_primary_screen = current_screen == self.app.primaryScreen()
+        logger.info('screen count: {}; current screen index: {}; current screen is primary screen: {}'.format(len(screens), screen_index, is_primary_screen))
 
 
     @log_function_name_in_debug_level_to_enter_exit
@@ -558,13 +569,3 @@ class MainWindow(QWidget):
         else:
             logger.info('The top-level software is {}'.format(app_name))
         return app_name
-
-
-    @log_function_name_in_debug_level_to_enter_exit
-    def my_show_hotkey_of_top_level_app(self):
-        self.screen_level = LEVEL_3
-        self.action = WindowAaction.DISPLAY_APP_HOTKEY
-        self.app_name = self.get_top_application_name()
-        self.clean_layout(self.layout)
-        self.paint_display_hotkey()
-        self.my_show_window_common()
