@@ -1,5 +1,5 @@
 
-from PyQt5.QtWidgets import QApplication, QWidget, QDesktopWidget, QLabel, QVBoxLayout, QGridLayout, QFormLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QDesktopWidget, QLabel, QGridLayout, QLayout
 from PyQt5.QtGui import QPainter, QColor, QFont, QCursor
 from PyQt5.QtCore import Qt
 from pynput import mouse
@@ -59,17 +59,18 @@ class MainWindow(QWidget):
 
         self.desktop = QDesktopWidget()
 
+        self.layout = QGridLayout()
+        self.setLayout(self.layout) 
+
+        self.app_name = APP_TITLE
         self.screen_level = LEVEL_DEFAULT
-        self.action = WindowAaction.IDENTIFY_WINDOW        
+        self.action = WindowAaction.DEFAULT
+        self.keys = []
 
         self.x_start_of_current_screen = 0
         self.y_start_of_current_screen = 0
         self.x_start_in_current_screen = 0
         self.y_start_in_current_screen = 0
-
-        self.app_name = APP_TITLE
-
-        self.keys = []
 
         self.record_current_mouse_position()
 
@@ -177,25 +178,36 @@ class MainWindow(QWidget):
                                                 self.x_start_in_current_screen,
                                                 self.y_start_in_current_screen)
             
-            if self.action == WindowAaction.DISPLAY_APP_HOTKEY:
-                self.paint_display_hotkey(window_properity)
-            else:
-                self.paint_to_identify_window(window_properity)
+            if self.action == WindowAaction.IDENTIFY_WINDOW:
+               self.paint_to_identify_window(window_properity)
 
             mouse.Controller().position = (self.x_old, self.y_old)
         except Exception as e:
             logger.error('paintEvent Exception: {}'.format(e.with_traceback))
             traceback.print_exc()
 
+
+    @log_function_name_in_debug_level_to_enter_exit
+    def clean_layout(self, layout:QLayout):
+        item_lst = list(range(layout.count()))
+        item_lst.reverse()
+        for idx in item_lst:
+            item = layout.takeAt(idx)
+            layout.removeItem(item)
+            if item.widget():
+                item.widget().deleteLater()
+            else:
+                self.clean_layout(item)
+
     
-    def paint_display_hotkey(self, window_properity: WindownProperty):
-        layout = QGridLayout()
-        self.setLayout(layout)
+    @log_function_name_in_debug_level_to_enter_exit
+    def paint_display_hotkey(self):
+        layout = self.layout
 
         # left key, left value, space, right key, right value, space
         column_count = 6
         title_lable = QLabel('HOTKEY', self)
-        font = QFont('Arial', int(window_properity.current_font_size))
+        font = QFont('Arial', 12)
         title_lable.setFont(font)
         layout.addWidget(title_lable, 0, 0, 1, column_count, Qt.AlignmentFlag.AlignCenter)
 
@@ -434,6 +446,7 @@ class MainWindow(QWidget):
     def my_show_full_window(self):
         self.screen_level = LEVEL_1
         self.action = WindowAaction.IDENTIFY_WINDOW
+        self.clean_layout(self.layout)
         self.my_show_window_common()
 
     
@@ -441,6 +454,7 @@ class MainWindow(QWidget):
     def my_show_detail_window(self):
         self.screen_level = LEVEL_2
         self.action = WindowAaction.IDENTIFY_WINDOW
+        self.clean_layout(self.layout)
         self.my_show_window_common()
 
 
@@ -551,4 +565,6 @@ class MainWindow(QWidget):
         self.screen_level = LEVEL_3
         self.action = WindowAaction.DISPLAY_APP_HOTKEY
         self.app_name = self.get_top_application_name()
+        self.clean_layout(self.layout)
+        self.paint_display_hotkey()
         self.my_show_window_common()
