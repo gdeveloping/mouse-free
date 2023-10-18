@@ -241,13 +241,13 @@ class MainWindow(QWidget):
         title_lable = QLabel('HOTKEY', self)
         font = QFont('Arial', int(self.window_properity.current_font_size))
         title_lable.setFont(font)
-        layout.addWidget(title_lable, 0, 0, 1, column_count, Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(title_lable, 0, 0, 1, column_count, Qt.AlignmentFlag.AlignHCenter)
 
-        logger.info("app name: {}".format(self.app_name))
-        logger.info("is idea: {}".format(self.app_name == "idea"))
         shortcuts = {}
-        if self.app_name == "idea":
-            shortcuts = idea_shortcuts
+        if (self.app_name in HOTKEY_PROPERTIES 
+            and PLATFORM in HOTKEY_PROPERTIES[self.app_name] 
+            and LANGUAGE in HOTKEY_PROPERTIES[self.app_name][PLATFORM]):
+            shortcuts = HOTKEY_PROPERTIES[self.app_name][PLATFORM][LANGUAGE]
             
         sorted_hotkeys = sorted(shortcuts.items())
         len_all = len(sorted_hotkeys)
@@ -259,8 +259,8 @@ class MainWindow(QWidget):
         for idx_item, entry in enumerate(sorted_hotkeys[0: len_half]):
             idx_row = idx_item + 1
 
-            key = entry[0]
-            value = entry[1]
+            key = entry[0] + ":"
+            value = entry[1][:HOTKEY_VALUE_MAX_LEN]
             key_label = QLabel(key, self)
             key_label.setFont(font)
             key_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
@@ -273,8 +273,8 @@ class MainWindow(QWidget):
             right_idx = idx_item + len_half
             if right_idx >= len_all:
                 continue
-            key = sorted_hotkeys[right_idx][0]
-            value = sorted_hotkeys[right_idx][1]
+            key = sorted_hotkeys[right_idx][0] + ":"
+            value = sorted_hotkeys[right_idx][1][:HOTKEY_VALUE_MAX_LEN]
             key_label = QLabel(key, self)
             key_label.setFont(font)
             key_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
@@ -585,8 +585,5 @@ class MainWindow(QWidget):
         process_app = psutil.Process(pid)
         exe_path = process_app.exe()
         app_name = exe_path.split(os.path.sep)[-1].removesuffix('.exe').removesuffix('64')
-        if "idea" == app_name:
-            logger.info('The top-level software is IntelliJ IDEA.')
-        else:
-            logger.info('The top-level software is {}'.format(app_name))
+        logger.debug('The top-level software is {}'.format(app_name))
         return app_name

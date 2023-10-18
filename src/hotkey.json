@@ -1,0 +1,70 @@
+{
+  "idea": {
+    "win": {
+      "en_us": {
+        "Ctrl + N": "Go to class",
+        "Ctrl + Shift + N": "Go to file",
+        "Ctrl + Alt + L": "Reformat code",
+        "Alt + Enter": "Show intention actions and quick-fixes",
+        "Ctrl + Alt + O": "Optimize imports",
+        "Ctrl + E": "Recent files popup",
+        "Ctrl + Space": "Basic code completion",
+        "Ctrl + Shift + Space": "Smart code completion",
+        "Ctrl + /": "Comment/uncomment with line comment",
+        "Ctrl + Shift + /": "Comment/uncomment with block comment",
+        "Ctrl + B": "Go to declaration",
+        "Ctrl + Shift + I": "Quick definition lookup",
+        "Ctrl + Q": "Quick documentation lookup",
+        "Ctrl + P": "Parameter info",
+        "Ctrl + Shift + F7": "Highlight usages in file",
+        "Ctrl + F12": "File structure popup",
+        "Alt + 1": "Project view",
+        "Alt + 2": "Favorites"
+      }
+    }
+  },
+  "chrome": {
+    "win": {
+      "en_us": {
+        "Ctrl+T": "Open a new tab",
+        "Ctrl+N": "Open a new window",
+        "Ctrl+W": "Close the current tab",
+        "Ctrl+Shift+W": "Close the current window",
+        "Ctrl+Shift+N": "Open a new window in Incognito mode",
+        "Ctrl+Shift+T": "Re-open previously closed tabs in the order they were closed in, up until Chrome first initialized",
+        "Ctrl+Tab": "Jump to the next open tab in the current window",
+        "Ctrl+Shift+Tab": "Jump to the previous open tab in the current window",
+        "Ctrl+[1-9]": "Jump to a specific tab in the current window (9 is always the last tab, no matter how many tabs you have open)",
+        "Alt+Left/Right Arrow": "Open the previous/next page in the current tab's browsing history (Back/Forward buttons)",
+        "Alt+F or Alt+E": "Open the Chrome menu",
+        "Ctrl+H": "Open the History page in a new tab",
+        "Ctrl+J": "Open the Downloads page in a new tab",
+        "Ctrl+Shift+B": "Show/hide the Bookmarks bar",
+        "Ctrl+Shift+O": "Open the Bookmarks Manager in a new tab",
+        "Shift+Esc": "Open the Chrome Task Manager",
+        "Ctrl+Shift+Delete": "Open the Clear Browsing Data options",
+        "Ctrl+Shift+M": "Sign in as a different profile or browse as a guest",
+        "Alt+Shift+I": "Open the feedback form",
+        "Ctrl+Shift+I": "Open the Developer Tools panel",
+        "Alt+D": "Jump focus to the Omnibox",
+        "Ctrl+Shift+Enter": "Add www. and .com to a site name, and open it in a new window (same as above but add Shift)",
+        "Ctrl+K": "Jump to the Omnibox from anywhere on the page and search with your default search engine",
+        "Shift+Delete": "Remove predictions from your address bar (highlight the suggestion when it appears, and then press the shortcut)",
+        "Ctrl+R": "Reload the current page",
+        "Ctrl+Shift+R": "Reload the current page without using cached content",
+        "Esc": "Stop the page from loading",
+        "Ctrl+S": "Save the current page to your computer",
+        "Ctrl+P": "Print the current page",
+        "Ctrl+Plus/Minus [+/-]": "Zoom in/out on the current page",
+        "Ctrl+0 [zero]": "Return the current webpage to the default size",
+        "Ctrl+D": "Save the current page as a bookmark",
+        "Ctrl+Shift+D": "Save all the open tabs in the current window as bookmarks",
+        "Ctrl+F": "Open the Find bar to search in the current page",
+        "Ctrl+G": "Go to the next match in your search",
+        "Ctrl+Shift+G": "Go to the previous match in your search",
+        "F11": "Turn on/off full-screen mode",
+        "Alt+Home": "Open your home page in the current tab"
+      }
+    }
+  }
+}
