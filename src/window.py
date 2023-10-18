@@ -29,8 +29,34 @@ class MainWindow(QWidget):
     def __init__(self, app: QApplication):
         super(MainWindow, self).__init__()
 
-        self.app = app
+        self.init_config()
+        self.app_name = APP_TITLE
+        self.screen_level = LEVEL_DEFAULT
+        self.action = WindowAaction.DEFAULT
+        self.keys = []
+        self.executor_pool = ThreadPoolExecutor(max_workers=THREAD_POOL_MAX_WORKERS)
 
+        self.app = app   
+        self.desktop = QDesktopWidget()
+        self.layout = QGridLayout()
+        self.setLayout(self.layout)  
+    
+        self.x_start_of_current_screen = 0
+        self.y_start_of_current_screen = 0
+        self.x_start_in_current_screen = 0
+        self.y_start_in_current_screen = 0
+
+        self.record_current_mouse_position()
+
+        self.update_current_screen()
+    
+        self.init_ui()
+
+        self.init_listener()
+
+
+    @log_function_name_in_debug_level_to_enter_exit
+    def init_config(self):
         self.screen_size_config = {
             LEVEL_1: {
                 KEY_CELL_WIDTH_COLUMN_SIZE: CELL_WIDTH_COLUMN_SIZE,
@@ -55,43 +81,6 @@ class MainWindow(QWidget):
         }
         logger.info('screen_size_config: {}'.format(self.screen_size_config))
 
-        self.executor_pool = ThreadPoolExecutor(max_workers=THREAD_POOL_MAX_WORKERS)
-
-        self.desktop = QDesktopWidget()
-
-        self.layout = QGridLayout()
-        self.setLayout(self.layout) 
-
-        self.app_name = APP_TITLE
-        self.screen_level = LEVEL_DEFAULT
-        self.action = WindowAaction.DEFAULT
-        self.keys = []
-
-        self.x_start_of_current_screen = 0
-        self.y_start_of_current_screen = 0
-        self.x_start_in_current_screen = 0
-        self.y_start_in_current_screen = 0
-
-        self.record_current_mouse_position()
-
-        self.update_current_screen()
-    
-        self.init_ui()
-
-        # listen keyboard
-        self.keyboard_listener = KeyboardListener(logger)
-        self.keyboard_listener.key_pressed_signal.connect(self.handle_keyboard)
-        self.keyboard_listener.quit_signal.connect(self.quit_app)        
-        self.keyboard_listener.show_signal.connect(self.my_show_full_window)
-        self.keyboard_listener.show_detail_signal.connect(self.my_show_detail_window)
-        self.keyboard_listener.show_in_switched_screen_signal.connect(self.my_show_window_in_switched_screen)
-        self.keyboard_listener.hide_signal.connect(self.my_hide) 
-        self.keyboard_listener.simulate_mouse_click_left_signal.connect(self.my_simulate_mouse_click_left)       
-        self.keyboard_listener.simulate_mouse_click_left_double_signal.connect(self.my_simulate_mouse_click_left_double)
-        self.keyboard_listener.simulate_mouse_click_right_signal.connect(self.my_simulate_mouse_click_right)
-        self.keyboard_listener.show_hotkey_of_top_level_app.connect(self.my_show_hotkey_of_top_level_app)
-        self.keyboard_listener.start()
-
 
     @log_function_name_in_debug_level_to_enter_exit
     def init_ui(self):
@@ -104,14 +93,31 @@ class MainWindow(QWidget):
         # 窗口名称
         self.window_tile = APP_TITLE
         self.setWindowTitle(self.window_tile)
-
+        # 幕布
         self.bg_color = QColor(*BACKGROUND_COLOR)
         self.palette = self.palette()
         self.palette.setColor(self.backgroundRole(), self.bg_color)
         self.setPalette(self.palette) 
-
+        # 展示窗口
         self.showFullScreen()
         self.post_show_window()
+
+    
+    @log_function_name_in_debug_level_to_enter_exit
+    def init_listener(self):
+        self.keyboard_listener = KeyboardListener(logger)
+        self.keyboard_listener.key_pressed_signal.connect(self.handle_keyboard)
+        self.keyboard_listener.quit_signal.connect(self.quit_app)        
+        self.keyboard_listener.show_signal.connect(self.my_show_full_window)
+        self.keyboard_listener.show_detail_signal.connect(self.my_show_detail_window)
+        self.keyboard_listener.show_in_switched_screen_signal.connect(self.my_show_window_in_switched_screen)
+        self.keyboard_listener.hide_signal.connect(self.my_hide) 
+        self.keyboard_listener.simulate_mouse_click_left_signal.connect(self.my_simulate_mouse_click_left)       
+        self.keyboard_listener.simulate_mouse_click_left_double_signal.connect(self.my_simulate_mouse_click_left_double)
+        self.keyboard_listener.simulate_mouse_click_right_signal.connect(self.my_simulate_mouse_click_right)
+        self.keyboard_listener.show_hotkey_of_top_level_app.connect(self.my_show_hotkey_of_top_level_app)
+
+        self.keyboard_listener.start()
 
 
     @log_function_name_in_debug_level_to_enter_exit
@@ -176,13 +182,14 @@ class MainWindow(QWidget):
                 self.height()
             ))
             
-            window_properity = WindownProperty(current_screen_width_column_size,
-                                                current_screen_height_row_size,
-                                                current_cell_width_column_size,
-                                                current_cell_height_row_size,
-                                                current_font_size,
-                                                self.x_start_in_current_screen,
-                                                self.y_start_in_current_screen)
+            window_properity = WindownProperty()
+            window_properity.current_screen_width_column_size = current_screen_width_column_size
+            window_properity.current_screen_height_row_size = current_screen_height_row_size
+            window_properity.current_cell_width_column_size = current_cell_width_column_size
+            window_properity.current_cell_height_row_size = current_cell_height_row_size
+            window_properity.current_font_size = current_font_size
+            window_properity.x_start_in_current_screen = self.x_start_in_current_screen
+            window_properity.y_start_in_current_screen = self.y_start_in_current_screen
             
             if self.action == WindowAaction.IDENTIFY_WINDOW:
                self.paint_to_identify_window(window_properity)
