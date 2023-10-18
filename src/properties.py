@@ -1,4 +1,3 @@
-import json
 from common_utils import *
 
 
@@ -6,18 +5,15 @@ APP_TITLE = 'Mouse-Free-Application'
 
 CONFIG_FILE_NAME = 'mouse-free.properties'
 
+HOTKEY_PROPERTIES_FILE_NAME = 'hotkey.json'
+
 # values: 'en_us', 'zh_cn'
 LANGUAGE = 'en_us'
 # values: win, mac, linux
 PLATFORM = 'win'
 
-properties = get_config_from_properties_file(CONFIG_FILE_NAME)
-
-HOTKEY_PROPERTIES_FILE_NAME = 'hotkey.json'
-HOTKEY_PROPERTIES_FILE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), HOTKEY_PROPERTIES_FILE_NAME)
-HOTKEY_PROPERTIES = {}
-with open(HOTKEY_PROPERTIES_FILE_PATH, 'r', encoding='utf8') as f:
-     HOTKEY_PROPERTIES = json.load(f)
+properties = get_config_properties(CONFIG_FILE_NAME)
+HOTKEY_PROPERTIES = get_config_hotkey(HOTKEY_PROPERTIES_FILE_NAME)
 
 
 # hotkey

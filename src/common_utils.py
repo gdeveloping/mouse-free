@@ -4,7 +4,7 @@ import logging
 import time
 import sys
 import re
-
+import json
 
 def build_config_logger(log_level, log_file_path):
     logger = logging.getLogger()
@@ -27,12 +27,36 @@ def build_config_logger(log_level, log_file_path):
     return logger
 
 
-def get_config_from_properties_file(config_file_name):
-    p = Properties()
-    config_file_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), config_file_name)
+def get_inner_config_file_dir_path():
+    return os.path.dirname(os.path.realpath(__file__))
+
+
+def get_executable_file_dir_path():
+    return os.path.dirname(sys.executable)
+
+
+def get_config_file_path(file_name):
+    file_path = os.path.join(get_executable_file_dir_path(), file_name)
+    if os.path.isfile(file_path):
+        return file_path
+    file_path = os.path.join(get_inner_config_file_dir_path(), file_name)
+    return file_path
+
+
+def get_config_properties(config_file_name):
+    properties = Properties()
+    config_file_path = get_config_file_path(config_file_name)
     with open(config_file_path, 'r') as config_file:
-        p.load(config_file)
-    return p
+        properties.load(config_file)
+    return properties
+
+
+def get_config_hotkey(config_file_name):
+    hotkeys = {}
+    config_file_path = get_config_file_path(config_file_name)
+    with open(config_file_path, 'r') as f:
+        hotkeys = json.load(f)
+    return hotkeys
 
 
 def str_to_log_level(level_str):
