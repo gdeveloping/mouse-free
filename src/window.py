@@ -41,12 +41,12 @@ class MainWindow(QWidget):
         self.layout = QGridLayout()
         self.setLayout(self.layout)  
     
-        self.x_start_of_current_screen = 0
-        self.y_start_of_current_screen = 0
-        self.x_start_in_current_screen = 0
-        self.y_start_in_current_screen = 0
+        self.window_properity = WindownProperty()
+        self.mouse_properity = MousenProperty()
 
         self.record_current_mouse_position()
+
+        self.update_property()
 
         self.update_current_screen()
     
@@ -125,6 +125,7 @@ class MainWindow(QWidget):
         self.screen_level = LEVEL_1
         self.action = WindowAaction.IDENTIFY_WINDOW
         self.clean_layout(self.layout)
+        self.update_property()
         self.my_show_window_common()
 
     
@@ -133,41 +134,68 @@ class MainWindow(QWidget):
         self.screen_level = LEVEL_2
         self.action = WindowAaction.IDENTIFY_WINDOW
         self.clean_layout(self.layout)
+        self.update_property()        
         self.my_show_window_common()
- 
+
+
+    @log_function_name_in_debug_level_to_enter_exit
+    def my_show_window_in_switched_screen(self):
+        self.screen_level = LEVEL_1
+        self.action = WindowAaction.IDENTIFY_WINDOW
+        self.clean_layout(self.layout)
+        self.switch_screen()
+        self.update_property()
+        self.my_show_window_common()
+
 
     @log_function_name_in_debug_level_to_enter_exit
     def my_show_hotkey_of_top_level_app(self):
         self.screen_level = LEVEL_3
         self.action = WindowAaction.DISPLAY_APP_HOTKEY
-        self.app_name = self.get_top_application_name()
         self.clean_layout(self.layout)
+        self.app_name = self.get_top_application_name()
+        self.update_property()
         self.paint_display_hotkey()
         self.my_show_window_common()
 
 
     @log_function_name_in_debug_level_to_enter_exit
     def paintEvent(self, event):
-        try:
+        try:            
+            if self.action == WindowAaction.IDENTIFY_WINDOW:
+               self.paint_to_identify_window()
+            mouse.Controller().position = (self.mouse_properity.x_old, self.mouse_properity.y_old)
+        except Exception as e:
+            logger.error('paintEvent Exception: {}'.format(e.with_traceback))
+            traceback.print_exc()
+
+
+    @log_function_name_in_debug_level_to_enter_exit
+    def update_property(self):
             current_font_size = self.get_current_font_size()
             current_cell_width_column_size = self.get_current_cell_width_column_size()
             current_cell_height_row_size = self.get_current_cell_height_row_size()
 
+            x_start_of_current_screen = self.window_properity.x_start_of_current_screen
+            y_start_of_current_screen = self.window_properity.y_start_of_current_screen
+            width_of_current_screen = self.window_properity.width_of_current_screen
+            height_of_current_screen = self.window_properity.height_of_current_screen
+
             # always full screen
-            self.setGeometry(self.x_start_of_current_screen, self.y_start_of_current_screen, 
-                             self.width_of_current_screen, self.height_of_current_screen)
+            self.setGeometry(x_start_of_current_screen, y_start_of_current_screen, 
+                             width_of_current_screen, height_of_current_screen)
 
             if self.screen_level == LEVEL_2:
                 x, y = mouse.Controller().position
                 current_screen_width_column_size = self.get_current_screen_size_config()[KEY_SCREEN_WIDTH_COLUMN_SIZE]
                 current_screen_height_row_size = self.get_current_screen_size_config()[KEY_SCREEN_HEIGHT_ROW_SIZE]
-                self.x_start_in_current_screen = max(0, x - current_screen_width_column_size // 2 - self.x_start_of_current_screen)
-                self.y_start_in_current_screen = max(0, y - current_screen_height_row_size // 2 - self.y_start_of_current_screen)
+                x_start_in_current_screen = max(0, x - current_screen_width_column_size // 2 - x_start_of_current_screen)
+                y_start_in_current_screen = max(0, y - current_screen_height_row_size // 2 - y_start_of_current_screen)
             else:
                 current_screen_width_column_size = self.get_current_screen_width_column_size()
                 current_screen_height_row_size = self.get_current_screen_height_row_size()
-                self.x_start_in_current_screen = 0
-                self.y_start_in_current_screen = 0
+                x_start_in_current_screen = 0
+                y_start_in_current_screen = 0
 
             logger.debug('screenGeometry: {}, {}'.format(current_screen_width_column_size, current_screen_height_row_size))
 
@@ -176,28 +204,19 @@ class MainWindow(QWidget):
                 current_cell_width_column_size,
                 current_cell_height_row_size,
                 current_font_size,
-                self.x_start_in_current_screen,
-                self.y_start_in_current_screen,
+                self.window_properity.x_start_in_current_screen,
+                self.window_properity.y_start_in_current_screen,
                 self.width(),
                 self.height()
-            ))
-            
-            window_properity = WindownProperty()
-            window_properity.current_screen_width_column_size = current_screen_width_column_size
-            window_properity.current_screen_height_row_size = current_screen_height_row_size
-            window_properity.current_cell_width_column_size = current_cell_width_column_size
-            window_properity.current_cell_height_row_size = current_cell_height_row_size
-            window_properity.current_font_size = current_font_size
-            window_properity.x_start_in_current_screen = self.x_start_in_current_screen
-            window_properity.y_start_in_current_screen = self.y_start_in_current_screen
-            
-            if self.action == WindowAaction.IDENTIFY_WINDOW:
-               self.paint_to_identify_window(window_properity)
+            ))                    
 
-            mouse.Controller().position = (self.x_old, self.y_old)
-        except Exception as e:
-            logger.error('paintEvent Exception: {}'.format(e.with_traceback))
-            traceback.print_exc()
+            self.window_properity.current_font_size = current_font_size
+            self.window_properity.current_cell_width_column_size = current_cell_width_column_size
+            self.window_properity.current_cell_height_row_size = current_cell_height_row_size
+            self.window_properity.current_screen_width_column_size = current_screen_width_column_size
+            self.window_properity.current_screen_height_row_size = current_screen_height_row_size
+            self.window_properity.x_start_in_current_screen = x_start_in_current_screen
+            self.window_properity.y_start_in_current_screen = y_start_in_current_screen
 
 
     @log_function_name_in_debug_level_to_enter_exit
@@ -220,7 +239,7 @@ class MainWindow(QWidget):
         # left key, left value, space, right key, right value, space
         column_count = 6
         title_lable = QLabel('HOTKEY', self)
-        font = QFont('Arial', 12)
+        font = QFont('Arial', int(self.window_properity.current_font_size))
         title_lable.setFont(font)
         layout.addWidget(title_lable, 0, 0, 1, column_count, Qt.AlignmentFlag.AlignCenter)
 
@@ -267,17 +286,17 @@ class MainWindow(QWidget):
             layout.addWidget(value_label, idx_row, 4)
 
 
-    def paint_to_identify_window(self, window_properity: WindownProperty):
+    def paint_to_identify_window(self):
         painter = QPainter()
         painter.begin(self)
-        font = QFont('Arial', int(window_properity.current_font_size))
+        font = QFont('Arial', int(self.window_properity.current_font_size))
         painter.setFont(font)
         painter.setPen(QColor(*IDENTIFIER_FONT_COLOR))
         identifier_count = 0            
-        for width_column_idx in range(0, window_properity.current_screen_width_column_size, window_properity.current_cell_width_column_size):
-            for height_row_idx in range(0, window_properity.current_screen_height_row_size, window_properity.current_cell_height_row_size):
-                painter.drawText(window_properity.current_cell_width_column_size // 2 + width_column_idx + self.x_start_in_current_screen, 
-                                window_properity.current_cell_height_row_size // 2 + height_row_idx + self.y_start_in_current_screen, 
+        for width_column_idx in range(0, self.window_properity.current_screen_width_column_size, self.window_properity.current_cell_width_column_size):
+            for height_row_idx in range(0, self.window_properity.current_screen_height_row_size, self.window_properity.current_cell_height_row_size):
+                painter.drawText(self.window_properity.current_cell_width_column_size // 2 + width_column_idx + self.window_properity.x_start_in_current_screen, 
+                                self.window_properity.current_cell_height_row_size // 2 + height_row_idx + self.window_properity.y_start_in_current_screen, 
                                 str(self.get_cell_identifier(width_column_idx, height_row_idx)))
                 identifier_count += 1
         painter.end()
@@ -356,16 +375,17 @@ class MainWindow(QWidget):
             height_row_key = str(self.keys[0]).upper()
             width_column_key = str(self.keys[1]).upper()        
             x_position_in_current_screen = string.ascii_uppercase.index(width_column_key) * current_cell_width_column_size + \
-                current_cell_width_column_size // 2 + self.x_start_in_current_screen
+                current_cell_width_column_size // 2 + self.window_properity.x_start_in_current_screen
             y_position_in_current_screen = string.ascii_uppercase.index(height_row_key) * current_cell_height_row_size + \
-                current_cell_height_row_size // 2 + self.y_start_in_current_screen
+                current_cell_height_row_size // 2 + self.window_properity.y_start_in_current_screen
         elif self.screen_level == LEVEL_2:
             key_idx = string.ascii_uppercase.index(str(self.keys[0]).upper())
             x_position_in_current_screen = (key_idx % CELL_COUNT_PER_WIDTH_PER_HEIGHT_LEVEL2) * current_cell_width_column_size + \
-                current_cell_width_column_size // 2 + self.x_start_in_current_screen
+                current_cell_width_column_size // 2 + self.window_properity.x_start_in_current_screen
             y_position_in_current_screen = (key_idx // CELL_COUNT_PER_WIDTH_PER_HEIGHT_LEVEL2) * current_cell_height_row_size + \
-                current_cell_height_row_size // 2 + self.y_start_in_current_screen
-        return x_position_in_current_screen + self.x_start_of_current_screen, y_position_in_current_screen + self.y_start_of_current_screen
+                current_cell_height_row_size // 2 + self.window_properity.y_start_in_current_screen
+        return (x_position_in_current_screen + self.window_properity.x_start_of_current_screen, 
+                y_position_in_current_screen + self.window_properity.y_start_of_current_screen)
 
 
     @log_function_name_in_debug_level_to_enter_exit
@@ -442,7 +462,9 @@ class MainWindow(QWidget):
 
     @log_function_name_in_debug_level_to_enter_exit
     def record_current_mouse_position(self):
-        self.x_old, self.y_old = mouse.Controller().position
+        x_old, y_old = mouse.Controller().position
+        self.mouse_properity.x_old = x_old
+        self.mouse_properity.y_old = y_old
 
 
     @log_function_name_in_debug_level_to_enter_exit
@@ -460,15 +482,15 @@ class MainWindow(QWidget):
         cursor = QCursor()
         current_screen = self.app.screenAt(cursor.pos())
 
-        self.x_start_of_current_screen = current_screen.geometry().left()
-        self.y_start_of_current_screen = current_screen.geometry().top()
-        self.width_of_current_screen = current_screen.geometry().width()
-        self.height_of_current_screen = current_screen.geometry().height()
+        self.window_properity.x_start_of_current_screen = current_screen.geometry().left()
+        self.window_properity.y_start_of_current_screen = current_screen.geometry().top()
+        self.window_properity.width_of_current_screen = current_screen.geometry().width()
+        self.window_properity.height_of_current_screen = current_screen.geometry().height()
 
         logger.info('cursor position: ({}, {}); current screen geometry: ({}, {}, {}, {})'.format(
             cursor.pos().x(), cursor.pos().y(), 
-            self.x_start_of_current_screen, self.y_start_of_current_screen,
-            self.width_of_current_screen, self.height_of_current_screen))
+            self.window_properity.x_start_of_current_screen, self.window_properity.y_start_of_current_screen,
+            self.window_properity.width_of_current_screen, self.window_properity.height_of_current_screen))
 
         screens = self.app.screens() 
         screen_index = screens.index(current_screen)
@@ -491,14 +513,6 @@ class MainWindow(QWidget):
                 break
         logger.info("switch screen and cursor now in ({}, {})".format(x_position, y_position))
         
-
-    @log_function_name_in_debug_level_to_enter_exit
-    def my_show_window_in_switched_screen(self):
-        self.screen_level = LEVEL_1
-        self.action = WindowAaction.IDENTIFY_WINDOW
-        self.switch_screen()
-        self.my_show_window_common()
-
 
     @log_function_name_in_debug_level_to_enter_exit
     def my_simulate_mouse_click_left(self):
@@ -568,8 +582,8 @@ class MainWindow(QWidget):
             return ""
         top_app = Application().connect(handle=active_window._hWnd)
         pid = top_app.process
-        p = psutil.Process(pid)
-        exe_path = p.exe()
+        process_app = psutil.Process(pid)
+        exe_path = process_app.exe()
         app_name = exe_path.split(os.path.sep)[-1].removesuffix('.exe').removesuffix('64')
         if "idea" == app_name:
             logger.info('The top-level software is IntelliJ IDEA.')
